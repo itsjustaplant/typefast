@@ -5,7 +5,7 @@ use ratatui::{
     prelude::{Backend, Terminal},
     style::{Color, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Paragraph, Wrap},
+    widgets::{Block, Borders, Padding, Paragraph, Wrap},
     Frame,
 };
 
@@ -41,33 +41,32 @@ impl View {
             .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
             .split(outer_layout[1]);
 
-        return (outer_layout, inner_layout);
+        (outer_layout, inner_layout)
     }
 
     fn draw_main_scene(frame: &mut Frame, area: Rect, state: &State) {
         let chunks = View::get_chunks(area);
         let outer_layout = chunks.0;
         let inner_layout = chunks.1;
-        let message = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi eu nulla et est sollicitudin iaculis. Nam pharetra eros nulla, lobortis accumsan sem laoreet finibus. Maecenas id convallis mauris, quis ultrices erat. Maecenas imperdiet maximus sapien in sodales. In posuere in lectus vel egestas. Praesent vestibulum convallis interdum. Vestibulum pellentesque libero non felis gravida, eu mollis orci cursus.";
-        let counter = state.get_counter() as usize;
+
+        let message = state.get_paragraph();
         let message_length = message.len();
-        let line = Line::from(vec![
+        let position = state.get_position() as usize;
+
+        let lines = Line::from(vec![
+            Span::styled(&message[0..position], Style::default().fg(Color::Green)),
             Span::styled(
-                &message[0..counter as usize],
-                Style::default().fg(Color::Red),
-            ),
-            Span::styled(
-                &message[counter..message_length],
-                Style::default().fg(Color::Yellow),
+                &message[position..message_length],
+                Style::default().fg(Color::Rgb(21, 21, 21)),
             ),
         ]);
         let title = Line::from(" typefast ");
-        let widget = Paragraph::new(line)
+        let widget = Paragraph::new(lines)
             .alignment(Alignment::Left)
             .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title(title.centered()),
+                Block::bordered()
+                    .title(title.centered())
+                    .padding(Padding::new(3, 3, 1, 1)),
             )
             .wrap(Wrap { trim: true });
 
@@ -77,7 +76,7 @@ impl View {
             "esc: Exit, enter: Select, ↑: Up, ↓: Down",
             inner_layout[0],
         );
-        View::draw_error(frame, &state, inner_layout[1]);
+        View::draw_error(frame, state, inner_layout[1]);
     }
 
     fn draw_legend(frame: &mut Frame, text: &str, area: Rect) {
