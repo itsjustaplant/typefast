@@ -8,8 +8,11 @@ pub struct State {
     pub error: String,
     pub position: i32,
     pub paragraph: String,
-    pub timer: String,
-    pub duration: u64,
+    pub timer: u64,
+    pub char_count: u64,
+    pub word_count: u64,
+    pub char_speed: f64,
+    pub word_speed: f64,
 }
 
 impl State {
@@ -52,13 +55,6 @@ impl State {
         self.position = position
     }
 
-    // pub fn get_words(&self) -> &Vec<String> {
-    //     &self.words
-    // }
-    // pub fn set_words(&mut self, words: &[String; 5]) {
-    //     self.words = words.to_vec();
-    // }
-
     pub fn get_paragraph(&self) -> &String {
         &self.paragraph
     }
@@ -66,17 +62,38 @@ impl State {
         self.paragraph = new_paragraph;
     }
 
-    pub fn get_timer(&self) -> &String {
-        &self.timer
+    pub fn get_timer(&self) -> u64 {
+        self.timer
     }
-    pub fn set_timer(&mut self, new_timer: String) {
+    pub fn set_timer(&mut self, new_timer: u64) {
         self.timer = new_timer;
     }
 
-    pub fn get_duration(&self) -> u64 {
-        self.duration
+    pub fn get_word_count(&self) -> u64 {
+        self.word_count
     }
-    pub fn set_duration(&mut self, duration: u64) {
-        self.duration = duration;
+    pub fn set_word_count(&mut self, word_count: u64) {
+        self.word_count = word_count;
+    }
+
+    pub fn get_char_count(&self) -> u64 {
+        self.char_count
+    }
+    pub fn set_char_count(&mut self, char_count: u64) {
+        self.char_count = char_count;
+    }
+
+    pub fn get_char_speed(&self) -> f64 {
+        self.char_speed
+    }
+    pub fn set_char_speed(&mut self, char_speed: f64) {
+        self.char_speed = char_speed;
+    }
+
+    pub fn get_word_speed(&self) -> f64 {
+        self.word_speed
+    }
+    pub fn set_word_speed(&mut self, word_speed: f64) {
+        self.word_speed = word_speed;
     }
 }

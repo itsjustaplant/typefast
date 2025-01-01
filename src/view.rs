@@ -54,6 +54,9 @@ impl View {
         let message = state.get_paragraph();
         let message_length = message.len();
         let position = state.get_position() as usize;
+        let timer = state.get_timer();
+        let word_speed = state.get_word_speed();
+        let char_speed = state.get_char_speed();
 
         let lines = Line::from(vec![
             Span::styled(&message[0..position], Style::default().fg(Color::Green)),
@@ -75,7 +78,11 @@ impl View {
         frame.render_widget(widget, outer_layout[0]);
         View::draw_legend(
             frame,
-            format!("esc: Exit, timer: {}s", state.get_timer()).as_str(),
+            format!(
+                "esc: Exit, timer: {}s wpm: {}, wcm: {}",
+                timer, word_speed, char_speed
+            )
+            .as_str(),
             inner_layout[0],
         );
         View::draw_error(frame, state, inner_layout[1]);
@@ -112,7 +119,7 @@ impl View {
             .block(
                 Block::bordered()
                     .title(title.centered())
-                    .padding(Padding::new(3, 3, 1, 1))
+                    .padding(Padding::new(3, 3, 1, 1)),
             )
             .wrap(Wrap { trim: true });
 

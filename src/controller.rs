@@ -9,9 +9,10 @@ use crossterm::event::{self, KeyCode, KeyEventKind};
 use ratatui::prelude::{Backend, Terminal};
 use thiserror::Error;
 
-use crate::constants::{Action, Screen, TEST_WORDS};
+use crate::constants::{Action, Screen, COUNTDOWN_DURATION, GAME_DURATION, TEST_WORDS};
 use crate::filesystem::{create_config_folder, get_app_config_path};
 use crate::state::State;
+use crate::util::{calculate_char_speed, calculate_word_speed};
 use crate::view::View;
 
 type DynamicError = Box<dyn std::error::Error>;
@@ -52,7 +53,7 @@ impl Controller {
         thread::spawn(move || {
             for _ in 0..duration {
                 if !timer_running.load(Ordering::SeqCst) {
-                  timer_running.store(false, Ordering::SeqCst);
+                    timer_running.store(false, Ordering::SeqCst);
                     break;
                 }
                 thread::sleep(Duration::from_secs(1));
@@ -85,6 +86,14 @@ impl Controller {
                     self.state.set_error(user_input.to_string());
                     if current_character == user_input {
                         self.state.set_position((current_position + 1) as i32);
+
+                        if current_character == ' ' {
+                            let word_count = self.state.get_word_count() + 1;
+                            self.state.set_word_count(word_count);
+                        } else {
+                            let char_count = self.state.get_char_count() + 1;
+                            self.state.set_char_count(char_count);
+                        }
                     }
                 } else {
                     self.state.set_is_running(false);
@@ -93,11 +102,11 @@ impl Controller {
             Action::ChangeScene(screen) => {
                 match screen {
                     Screen::CountDown => {
-                        self.setup_timer(3);
+                        self.setup_timer(COUNTDOWN_DURATION);
                         self.state.set_next_screen(Screen::Main);
                     }
                     Screen::Main => {
-                        self.setup_timer(10);
+                        self.setup_timer(GAME_DURATION);
                         self.state.set_next_screen(Screen::Menu);
                     }
                     Screen::Menu => {
@@ -161,7 +170,22 @@ impl Controller {
             if self.timer_running.load(Ordering::SeqCst) {
                 let time = self.remaining_time.lock().unwrap();
                 let time_value = *time;
-                self.state.set_timer(time_value.to_string());
+                let current_time_value = self.state.get_timer();
+
+                if time_value != current_time_value {
+                    let word_speed = calculate_word_speed(
+                        self.state.word_count,
+                        GAME_DURATION - current_time_value,
+                    );
+                    let char_speed = calculate_char_speed(
+                        self.state.char_count,
+                        GAME_DURATION - current_time_value,
+                    );
+                    self.state.set_word_speed(word_speed);
+                    self.state.set_char_speed(char_speed);
+                    self.state.set_timer(time_value);
+                }
+
                 if time_value == 0 {
                     let action = match self.state.get_next_screen() {
                         Screen::Main => Action::ChangeScene(Screen::Main),

@@ -2,6 +2,7 @@ pub mod constants;
 pub mod controller;
 pub mod filesystem;
 pub mod state;
+pub mod util;
 pub mod view;
 
 use std::io::stdout;

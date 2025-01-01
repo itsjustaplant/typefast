@@ -1,5 +1,7 @@
 pub const APP_PATH: &str = "typefast";
 pub const DB_NAME: &str = "typefast.db";
+pub const GAME_DURATION: u64 = 60;
+pub const COUNTDOWN_DURATION: u64 = 3;
 pub const TEST_WORDS: [&str; 21] = [
     "plant",
     "planta",
