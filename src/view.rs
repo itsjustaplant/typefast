@@ -90,10 +90,9 @@ impl View {
         let widget = Paragraph::new("Menu")
             .alignment(Alignment::Center)
             .block(
-                Block::default()
+                Block::bordered()
                     .title(title.centered())
-                    .borders(Borders::ALL)
-                    .border_style(Style::default().fg(Color::Rgb(21, 21, 21))),
+                    .padding(Padding::new(3, 3, 1, 1)),
             )
             .wrap(Wrap { trim: true });
 
@@ -108,22 +107,17 @@ impl View {
         let inner_layout = chunks.1;
 
         let title = Line::from(" typefast ");
-        let widget = Paragraph::new("Get ready!")
+        let widget = Paragraph::new(format!("Get ready! {}s", state.get_timer()))
             .alignment(Alignment::Center)
             .block(
-                Block::default()
+                Block::bordered()
                     .title(title.centered())
-                    .borders(Borders::ALL)
-                    .border_style(Style::default().fg(Color::Rgb(21, 21, 21))),
+                    .padding(Padding::new(3, 3, 1, 1))
             )
             .wrap(Wrap { trim: true });
 
         frame.render_widget(widget, outer_layout[0]);
-        View::draw_legend(
-            frame,
-            format!("Ready! {}", state.get_timer()).as_str(),
-            inner_layout[0],
-        );
+
         View::draw_error(frame, state, inner_layout[1]);
     }
 
