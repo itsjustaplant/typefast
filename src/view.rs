@@ -25,6 +25,8 @@ impl View {
 
             match state.screen {
                 Screen::Main => View::draw_main_scene(frame, area, state),
+                Screen::Menu => View::draw_menu_scene(frame, area, state),
+                Screen::CountDown => View::draw_countdown_scene(frame, area, state),
             }
         })?;
         Ok(())
@@ -73,7 +75,53 @@ impl View {
         frame.render_widget(widget, outer_layout[0]);
         View::draw_legend(
             frame,
-            "esc: Exit, enter: Select, ↑: Up, ↓: Down",
+            format!("esc: Exit, timer: {}s", state.get_timer()).as_str(),
+            inner_layout[0],
+        );
+        View::draw_error(frame, state, inner_layout[1]);
+    }
+
+    fn draw_menu_scene(frame: &mut Frame, area: Rect, state: &State) {
+        let chunks = View::get_chunks(area);
+        let outer_layout = chunks.0;
+        let inner_layout = chunks.1;
+
+        let title = Line::from(" typefast ");
+        let widget = Paragraph::new("Menu")
+            .alignment(Alignment::Center)
+            .block(
+                Block::default()
+                    .title(title.centered())
+                    .borders(Borders::ALL)
+                    .border_style(Style::default().fg(Color::Rgb(21, 21, 21))),
+            )
+            .wrap(Wrap { trim: true });
+
+        frame.render_widget(widget, outer_layout[0]);
+        View::draw_legend(frame, "Press enter to start", inner_layout[0]);
+        View::draw_error(frame, state, inner_layout[1]);
+    }
+
+    fn draw_countdown_scene(frame: &mut Frame, area: Rect, state: &State) {
+        let chunks = View::get_chunks(area);
+        let outer_layout = chunks.0;
+        let inner_layout = chunks.1;
+
+        let title = Line::from(" typefast ");
+        let widget = Paragraph::new("Get ready!")
+            .alignment(Alignment::Center)
+            .block(
+                Block::default()
+                    .title(title.centered())
+                    .borders(Borders::ALL)
+                    .border_style(Style::default().fg(Color::Rgb(21, 21, 21))),
+            )
+            .wrap(Wrap { trim: true });
+
+        frame.render_widget(widget, outer_layout[0]);
+        View::draw_legend(
+            frame,
+            format!("Ready! {}", state.get_timer()).as_str(),
             inner_layout[0],
         );
         View::draw_error(frame, state, inner_layout[1]);

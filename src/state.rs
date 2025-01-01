@@ -4,9 +4,12 @@ use crate::constants::Screen;
 pub struct State {
     pub is_running: bool,
     pub screen: Screen,
+    pub next_screen: Screen,
     pub error: String,
     pub position: i32,
     pub paragraph: String,
+    pub timer: String,
+    pub duration: u64,
 }
 
 impl State {
@@ -35,6 +38,13 @@ impl State {
         self.screen = screen;
     }
 
+    pub fn get_next_screen(&self) -> &Screen {
+        &self.next_screen
+    }
+    pub fn set_next_screen(&mut self, next_screen: Screen) {
+        self.next_screen = next_screen;
+    }
+
     pub fn get_position(&self) -> i32 {
         self.position
     }
@@ -54,5 +64,19 @@ impl State {
     }
     pub fn set_paragraph(&mut self, new_paragraph: String) {
         self.paragraph = new_paragraph;
+    }
+
+    pub fn get_timer(&self) -> &String {
+        &self.timer
+    }
+    pub fn set_timer(&mut self, new_timer: String) {
+        self.timer = new_timer;
+    }
+
+    pub fn get_duration(&self) -> u64 {
+        self.duration
+    }
+    pub fn set_duration(&mut self, duration: u64) {
+        self.duration = duration;
     }
 }

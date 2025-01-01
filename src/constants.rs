@@ -26,8 +26,10 @@ pub const TEST_WORDS: [&str; 21] = [
 
 #[derive(Debug, Default, PartialEq)]
 pub enum Screen {
-    #[default]
     Main,
+    #[default]
+    Menu,
+    CountDown,
 }
 
 #[derive(Debug, PartialEq)]
@@ -36,4 +38,5 @@ pub enum Action {
     Empty,
     Exit,
     CharInput(char),
+    ChangeScene(Screen),
 }

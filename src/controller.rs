@@ -1,8 +1,15 @@
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Mutex,
+};
+use std::thread;
+use std::time::Duration;
+
 use crossterm::event::{self, KeyCode, KeyEventKind};
 use ratatui::prelude::{Backend, Terminal};
 use thiserror::Error;
 
-use crate::constants::{Action, TEST_WORDS};
+use crate::constants::{Action, Screen, TEST_WORDS};
 use crate::filesystem::{create_config_folder, get_app_config_path};
 use crate::state::State;
 use crate::view::View;
@@ -12,6 +19,8 @@ type DynamicError = Box<dyn std::error::Error>;
 #[derive(Default)]
 pub struct Controller {
     pub state: State,
+    timer_running: Arc<AtomicBool>,
+    remaining_time: Arc<Mutex<u64>>,
 }
 
 #[derive(Error, Debug)]
@@ -24,7 +33,35 @@ impl Controller {
     pub fn new() -> Self {
         Self {
             state: State::new(),
+            timer_running: Arc::new(AtomicBool::new(false)),
+            remaining_time: Arc::new(Mutex::new(0)),
         }
+    }
+
+    pub fn setup_timer(&mut self, duration: u64) {
+        if self.timer_running.load(Ordering::SeqCst) {
+            return;
+        }
+
+        self.timer_running.store(true, Ordering::SeqCst);
+        let timer_running = Arc::clone(&self.timer_running);
+        let remaining_time = Arc::clone(&self.remaining_time);
+
+        *remaining_time.lock().unwrap() = duration;
+
+        thread::spawn(move || {
+            for _ in 0..duration {
+                if !timer_running.load(Ordering::SeqCst) {
+                  timer_running.store(false, Ordering::SeqCst);
+                    break;
+                }
+                thread::sleep(Duration::from_secs(1));
+                let mut time = remaining_time.lock().unwrap();
+                if *time > 0 {
+                    *time -= 1;
+                }
+            }
+        });
     }
 
     pub fn handle_action(&mut self, action: Action) {
@@ -53,6 +90,22 @@ impl Controller {
                     self.state.set_is_running(false);
                 }
             }
+            Action::ChangeScene(screen) => {
+                match screen {
+                    Screen::CountDown => {
+                        self.setup_timer(4);
+                        self.state.set_next_screen(Screen::Main);
+                    }
+                    Screen::Main => {
+                        self.setup_timer(11);
+                        self.state.set_next_screen(Screen::Menu);
+                    }
+                    Screen::Menu => {
+                        self.state.set_next_screen(Screen::CountDown);
+                    }
+                }
+                self.state.set_screen(screen);
+            }
             Action::Empty => {}
         }
     }
@@ -60,6 +113,13 @@ impl Controller {
     pub fn handle_key_stroke(&mut self, key_code: KeyCode) -> Action {
         match key_code {
             KeyCode::Esc => Action::Exit,
+            KeyCode::Enter => {
+                if self.state.get_screen() == &Screen::Menu {
+                    Action::ChangeScene(Screen::CountDown)
+                } else {
+                    Action::ChangeScene(Screen::Main)
+                }
+            }
             KeyCode::Char(user_input) => Action::CharInput(user_input),
             _ => Action::Empty,
         }
@@ -97,6 +157,23 @@ impl Controller {
                 .handle_events()
                 .map_err(ControllerError::HandleEventError);
             View::draw(terminal, &self.state)?;
+
+            if self.timer_running.load(Ordering::SeqCst) {
+                let time = self.remaining_time.lock().unwrap();
+                let time_value = *time - 1;
+                self.state.set_timer(time_value.to_string());
+                if time_value == 1 {
+                    self.timer_running.store(false, Ordering::SeqCst);
+                    let action = match self.state.get_next_screen() {
+                        Screen::Main => Action::ChangeScene(Screen::Main),
+                        Screen::Menu => Action::ChangeScene(Screen::Menu),
+                        Screen::CountDown => Action::ChangeScene(Screen::CountDown),
+                    };
+                    drop(time);
+                    self.handle_action(action);
+                }
+            }
+            thread::sleep(Duration::from_millis(50));
         }
         Ok(())
     }
