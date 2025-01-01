@@ -93,11 +93,11 @@ impl Controller {
             Action::ChangeScene(screen) => {
                 match screen {
                     Screen::CountDown => {
-                        self.setup_timer(4);
+                        self.setup_timer(3);
                         self.state.set_next_screen(Screen::Main);
                     }
                     Screen::Main => {
-                        self.setup_timer(11);
+                        self.setup_timer(10);
                         self.state.set_next_screen(Screen::Menu);
                     }
                     Screen::Menu => {
@@ -160,20 +160,20 @@ impl Controller {
 
             if self.timer_running.load(Ordering::SeqCst) {
                 let time = self.remaining_time.lock().unwrap();
-                let time_value = *time - 1;
+                let time_value = *time;
                 self.state.set_timer(time_value.to_string());
-                if time_value == 1 {
-                    self.timer_running.store(false, Ordering::SeqCst);
+                if time_value == 0 {
                     let action = match self.state.get_next_screen() {
                         Screen::Main => Action::ChangeScene(Screen::Main),
                         Screen::Menu => Action::ChangeScene(Screen::Menu),
                         Screen::CountDown => Action::ChangeScene(Screen::CountDown),
                     };
                     drop(time);
+                    self.timer_running.store(false, Ordering::SeqCst);
                     self.handle_action(action);
                 }
             }
-            thread::sleep(Duration::from_millis(50));
+            thread::sleep(Duration::from_millis(5));
         }
         Ok(())
     }
