@@ -25,6 +25,7 @@ pub const TEST_WORDS: [&str; 21] = [
     "type",
     "more",
 ];
+pub const WORD_LIST: &str = include_str!("../assets/word_list.txt");
 
 #[derive(Debug, Default, PartialEq)]
 pub enum Screen {

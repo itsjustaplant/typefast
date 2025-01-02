@@ -9,11 +9,14 @@ use crossterm::event::{self, KeyCode, KeyEventKind};
 use ratatui::prelude::{Backend, Terminal};
 use thiserror::Error;
 
-use crate::constants::{Action, Screen, COUNTDOWN_DURATION, GAME_DURATION, TEST_WORDS};
 use crate::filesystem::{create_config_folder, get_app_config_path};
 use crate::state::State;
 use crate::util::{calculate_char_speed, calculate_word_speed};
 use crate::view::View;
+use crate::{
+    constants::{Action, Screen, COUNTDOWN_DURATION, GAME_DURATION},
+    filesystem::get_words,
+};
 
 type DynamicError = Box<dyn std::error::Error>;
 
@@ -69,9 +72,16 @@ impl Controller {
         match action {
             Action::Init => {
                 self.state.set_is_running(true);
-                let parsed_words = TEST_WORDS.map(|word| word.to_string());
+                let parsed_words = get_words()
+                    .iter()
+                    .map(|word| word.to_string())
+                    .collect::<Vec<String>>();
                 // self.state.set_words(&parsed_words);
-                let parsed_paragraph = parsed_words.map(|word| word.to_lowercase()).join(" ");
+                let parsed_paragraph = parsed_words
+                    .iter()
+                    .map(|word| word.to_lowercase())
+                    .collect::<Vec<String>>()
+                    .join(" ");
                 self.state.set_paragraph(parsed_paragraph);
             }
             Action::Exit => {
@@ -83,7 +93,7 @@ impl Controller {
                 if let Some(current_character) =
                     self.state.get_paragraph().chars().nth(current_position)
                 {
-                    self.state.set_error(user_input.to_string());
+                    // self.state.set_error(user_input.to_string());
                     if current_character == user_input {
                         self.state.set_position((current_position + 1) as i32);
 
@@ -121,7 +131,13 @@ impl Controller {
 
     pub fn handle_key_stroke(&mut self, key_code: KeyCode) -> Action {
         match key_code {
-            KeyCode::Esc => Action::Exit,
+            KeyCode::Esc => {
+              match self.state.get_screen() {
+                Screen::Menu => Action::Exit,
+                Screen::Main => Action::ChangeScene(Screen::Menu),
+                Screen::CountDown => Action::ChangeScene(Screen::Menu),
+              }
+            },
             KeyCode::Enter => {
                 if self.state.get_screen() == &Screen::Menu {
                     Action::ChangeScene(Screen::CountDown)
