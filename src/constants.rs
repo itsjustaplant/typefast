@@ -41,5 +41,5 @@ pub enum Action {
     Empty,
     Exit,
     CharInput(char),
-    ChangeScene(Screen),
+    ChangeScreene(Screen),
 }

@@ -109,7 +109,7 @@ impl Controller {
                     self.state.set_is_running(false);
                 }
             }
-            Action::ChangeScene(screen) => {
+            Action::ChangeScreene(screen) => {
                 match screen {
                     Screen::CountDown => {
                         self.setup_timer(COUNTDOWN_DURATION);
@@ -131,18 +131,16 @@ impl Controller {
 
     pub fn handle_key_stroke(&mut self, key_code: KeyCode) -> Action {
         match key_code {
-            KeyCode::Esc => {
-              match self.state.get_screen() {
+            KeyCode::Esc => match self.state.get_screen() {
                 Screen::Menu => Action::Exit,
-                Screen::Main => Action::ChangeScene(Screen::Menu),
-                Screen::CountDown => Action::ChangeScene(Screen::Menu),
-              }
+                Screen::Main => Action::ChangeScreene(Screen::Menu),
+                Screen::CountDown => Action::ChangeScreene(Screen::Menu),
             },
             KeyCode::Enter => {
                 if self.state.get_screen() == &Screen::Menu {
-                    Action::ChangeScene(Screen::CountDown)
+                    Action::ChangeScreene(Screen::CountDown)
                 } else {
-                    Action::ChangeScene(Screen::Main)
+                    Action::ChangeScreene(Screen::Main)
                 }
             }
             KeyCode::Char(user_input) => Action::CharInput(user_input),
@@ -204,9 +202,9 @@ impl Controller {
 
                 if time_value == 0 {
                     let action = match self.state.get_next_screen() {
-                        Screen::Main => Action::ChangeScene(Screen::Main),
-                        Screen::Menu => Action::ChangeScene(Screen::Menu),
-                        Screen::CountDown => Action::ChangeScene(Screen::CountDown),
+                        Screen::Main => Action::ChangeScreene(Screen::Main),
+                        Screen::Menu => Action::ChangeScreene(Screen::Menu),
+                        Screen::CountDown => Action::ChangeScreene(Screen::CountDown),
                     };
                     drop(time);
                     self.timer_running.store(false, Ordering::SeqCst);

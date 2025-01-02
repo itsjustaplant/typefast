@@ -24,9 +24,9 @@ impl View {
             let area = frame.size();
 
             match state.screen {
-                Screen::Main => View::draw_main_scene(frame, area, state),
-                Screen::Menu => View::draw_menu_scene(frame, area, state),
-                Screen::CountDown => View::draw_countdown_scene(frame, area, state),
+                Screen::Main => View::draw_main_screene(frame, area, state),
+                Screen::Menu => View::draw_menu_screene(frame, area, state),
+                Screen::CountDown => View::draw_countdown_screene(frame, area, state),
             }
         })?;
         Ok(())
@@ -46,7 +46,7 @@ impl View {
         (outer_layout, inner_layout)
     }
 
-    fn draw_main_scene(frame: &mut Frame, area: Rect, state: &State) {
+    fn draw_main_screene(frame: &mut Frame, area: Rect, state: &State) {
         let chunks = View::get_chunks(area);
         let outer_layout = chunks.0;
         let inner_layout = chunks.1;
@@ -88,7 +88,7 @@ impl View {
         View::draw_error(frame, state, inner_layout[1]);
     }
 
-    fn draw_menu_scene(frame: &mut Frame, area: Rect, state: &State) {
+    fn draw_menu_screene(frame: &mut Frame, area: Rect, state: &State) {
         let chunks = View::get_chunks(area);
         let outer_layout = chunks.0;
         let inner_layout = chunks.1;
@@ -108,7 +108,7 @@ impl View {
         View::draw_error(frame, state, inner_layout[1]);
     }
 
-    fn draw_countdown_scene(frame: &mut Frame, area: Rect, state: &State) {
+    fn draw_countdown_screene(frame: &mut Frame, area: Rect, state: &State) {
         let chunks = View::get_chunks(area);
         let outer_layout = chunks.0;
         let inner_layout = chunks.1;
