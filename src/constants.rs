@@ -29,7 +29,7 @@ pub const WORD_LIST: &str = include_str!("../assets/word_list.txt");
 
 #[derive(Debug, Default, PartialEq)]
 pub enum Screen {
-    Main,
+    Game,
     #[default]
     Menu,
     CountDown,

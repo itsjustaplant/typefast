@@ -68,6 +68,10 @@ impl Controller {
         });
     }
 
+    pub fn stop_timer(&mut self) {
+        self.timer_running.store(false, Ordering::SeqCst);
+    }
+
     pub fn handle_action(&mut self, action: Action) {
         match action {
             Action::Init => {
@@ -113,9 +117,9 @@ impl Controller {
                 match screen {
                     Screen::CountDown => {
                         self.setup_timer(COUNTDOWN_DURATION);
-                        self.state.set_next_screen(Screen::Main);
+                        self.state.set_next_screen(Screen::Game);
                     }
-                    Screen::Main => {
+                    Screen::Game => {
                         self.setup_timer(GAME_DURATION);
                         self.state.set_next_screen(Screen::Menu);
                     }
@@ -131,17 +135,19 @@ impl Controller {
 
     pub fn handle_key_stroke(&mut self, key_code: KeyCode) -> Action {
         match key_code {
-            KeyCode::Esc => match self.state.get_screen() {
-                Screen::Menu => Action::Exit,
-                Screen::Main => Action::ChangeScreene(Screen::Menu),
-                Screen::CountDown => Action::ChangeScreene(Screen::Menu),
-            },
-            KeyCode::Enter => {
-                if self.state.get_screen() == &Screen::Menu {
-                    Action::ChangeScreene(Screen::CountDown)
-                } else {
-                    Action::ChangeScreene(Screen::Main)
+            KeyCode::Esc => {
+                self.stop_timer();
+                match self.state.get_screen() {
+                    Screen::Menu => Action::Exit,
+                    Screen::CountDown => Action::ChangeScreene(Screen::Menu),
+                    Screen::Game => Action::ChangeScreene(Screen::Menu),
                 }
+            }
+            KeyCode::Enter => {
+              match self.state.get_screen() {
+                  Screen::Menu => Action::ChangeScreene(Screen::CountDown),
+                  _ => Action::Empty,
+              }
             }
             KeyCode::Char(user_input) => Action::CharInput(user_input),
             _ => Action::Empty,
@@ -202,12 +208,12 @@ impl Controller {
 
                 if time_value == 0 {
                     let action = match self.state.get_next_screen() {
-                        Screen::Main => Action::ChangeScreene(Screen::Main),
+                        Screen::Game => Action::ChangeScreene(Screen::Game),
                         Screen::Menu => Action::ChangeScreene(Screen::Menu),
                         Screen::CountDown => Action::ChangeScreene(Screen::CountDown),
                     };
                     drop(time);
-                    self.timer_running.store(false, Ordering::SeqCst);
+                    self.stop_timer();
                     self.handle_action(action);
                 }
             }

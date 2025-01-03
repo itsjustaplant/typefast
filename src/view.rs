@@ -24,7 +24,7 @@ impl View {
             let area = frame.size();
 
             match state.screen {
-                Screen::Main => View::draw_main_screene(frame, area, state),
+                Screen::Game => View::draw_main_screene(frame, area, state),
                 Screen::Menu => View::draw_menu_screene(frame, area, state),
                 Screen::CountDown => View::draw_countdown_screene(frame, area, state),
             }
