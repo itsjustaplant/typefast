@@ -79,7 +79,7 @@ impl View {
         View::draw_legend(
             frame,
             format!(
-                "esc: Exit, timer: {}s wpm: {}, wcm: {}",
+                "esc: Exit, timer: {}s wpm: {}, cpm: {}",
                 timer, word_speed, char_speed
             )
             .as_str(),

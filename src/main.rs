@@ -1,6 +1,8 @@
+pub mod client;
 pub mod constants;
 pub mod controller;
 pub mod filesystem;
+pub mod record;
 pub mod state;
 pub mod util;
 pub mod view;

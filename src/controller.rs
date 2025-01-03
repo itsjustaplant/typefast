@@ -9,10 +9,12 @@ use crossterm::event::{self, KeyCode, KeyEventKind};
 use ratatui::prelude::{Backend, Terminal};
 use thiserror::Error;
 
+use crate::constants::DB_NAME;
 use crate::filesystem::{create_config_folder, get_app_config_path};
 use crate::state::State;
 use crate::util::{calculate_char_speed, calculate_word_speed};
 use crate::view::View;
+use crate::{client::Client, filesystem};
 use crate::{
     constants::{Action, Screen, COUNTDOWN_DURATION, GAME_DURATION},
     filesystem::get_words,
@@ -25,6 +27,7 @@ pub struct Controller {
     pub state: State,
     timer_running: Arc<AtomicBool>,
     remaining_time: Arc<Mutex<u64>>,
+    client: Client,
 }
 
 #[derive(Error, Debug)]
@@ -39,6 +42,7 @@ impl Controller {
             state: State::new(),
             timer_running: Arc::new(AtomicBool::new(false)),
             remaining_time: Arc::new(Mutex::new(0)),
+            client: Client::default(),
         }
     }
 
@@ -143,12 +147,10 @@ impl Controller {
                     Screen::Game => Action::ChangeScreene(Screen::Menu),
                 }
             }
-            KeyCode::Enter => {
-              match self.state.get_screen() {
-                  Screen::Menu => Action::ChangeScreene(Screen::CountDown),
-                  _ => Action::Empty,
-              }
-            }
+            KeyCode::Enter => match self.state.get_screen() {
+                Screen::Menu => Action::ChangeScreene(Screen::CountDown),
+                _ => Action::Empty,
+            },
             KeyCode::Char(user_input) => Action::CharInput(user_input),
             _ => Action::Empty,
         }
@@ -168,13 +170,18 @@ impl Controller {
 
     pub fn init_controller(&mut self) -> Result<(), DynamicError> {
         let app_config_path = get_app_config_path()?;
-
         create_config_folder(&app_config_path)?;
+
+        filesystem::create_config_folder(&app_config_path)?;
+        self.client.open_connection(app_config_path, DB_NAME)?;
+        self.client.create_records_table()?;
+
         self.handle_action(Action::Init);
         Ok(())
     }
 
     pub fn exit(&mut self) -> Result<(), DynamicError> {
+        self.client.close_connection()?;
         Ok(())
     }
 

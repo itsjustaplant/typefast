@@ -9,3 +9,4 @@ ratatui = "0.26.3"
 dirs = "5.0.1"
 thiserror = "2.0.9"
 rand = "0.8.5"
+rusqlite = { version = "0.31.0", features = ["bundled"] }
