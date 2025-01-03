@@ -1,18 +1,21 @@
-use crate::constants::Screen;
+use crate::constants::Page;
+use crate::record::Record;
 
 #[derive(Debug, Default)]
 pub struct State {
     pub is_running: bool,
-    pub screen: Screen,
-    pub next_screen: Screen,
+    pub page: Page,
+    pub next_page: Page,
     pub error: String,
     pub position: i32,
     pub paragraph: String,
     pub timer: u64,
     pub char_count: u64,
     pub word_count: u64,
-    pub char_speed: f64,
-    pub word_speed: f64,
+    pub char_speed: i64,
+    pub word_speed: i64,
+    pub records: Vec<Record>,
+    pub menu_index: i32,
 }
 
 impl State {
@@ -34,18 +37,18 @@ impl State {
         self.error = error;
     }
 
-    pub fn get_screen(&self) -> &Screen {
-        &self.screen
+    pub fn get_page(&self) -> &Page {
+        &self.page
     }
-    pub fn set_screen(&mut self, screen: Screen) {
-        self.screen = screen;
+    pub fn set_page(&mut self, page: Page) {
+        self.page = page;
     }
 
-    pub fn get_next_screen(&self) -> &Screen {
-        &self.next_screen
+    pub fn get_next_page(&self) -> &Page {
+        &self.next_page
     }
-    pub fn set_next_screen(&mut self, next_screen: Screen) {
-        self.next_screen = next_screen;
+    pub fn set_next_page(&mut self, next_page: Page) {
+        self.next_page = next_page;
     }
 
     pub fn get_position(&self) -> i32 {
@@ -83,17 +86,31 @@ impl State {
         self.char_count = char_count;
     }
 
-    pub fn get_char_speed(&self) -> f64 {
+    pub fn get_char_speed(&self) -> i64 {
         self.char_speed
     }
-    pub fn set_char_speed(&mut self, char_speed: f64) {
+    pub fn set_char_speed(&mut self, char_speed: i64) {
         self.char_speed = char_speed;
     }
 
-    pub fn get_word_speed(&self) -> f64 {
+    pub fn get_word_speed(&self) -> i64 {
         self.word_speed
     }
-    pub fn set_word_speed(&mut self, word_speed: f64) {
+    pub fn set_word_speed(&mut self, word_speed: i64) {
         self.word_speed = word_speed;
+    }
+
+    pub fn get_records(&self) -> &Vec<Record> {
+        &self.records
+    }
+    pub fn set_records(&mut self, records: Vec<Record>) {
+        self.records = records;
+    }
+
+    pub fn get_menu_index(&self) -> i32 {
+        self.menu_index
+    }
+    pub fn set_menu_index(&mut self, menu_index: i32) {
+        self.menu_index = menu_index;
     }
 }

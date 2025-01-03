@@ -26,13 +26,16 @@ pub const TEST_WORDS: [&str; 21] = [
     "more",
 ];
 pub const WORD_LIST: &str = include_str!("../assets/word_list.txt");
+pub const MENU_ITEMS: [&str; 2] = ["Start", "Records"];
 
 #[derive(Debug, Default, PartialEq)]
-pub enum Screen {
+pub enum Page {
     Game,
     #[default]
     Menu,
     CountDown,
+    Records,
+    GameResult,
 }
 
 #[derive(Debug, PartialEq)]
@@ -41,5 +44,8 @@ pub enum Action {
     Empty,
     Exit,
     CharInput(char),
-    ChangeScreene(Screen),
+    ChangePage(Page),
+    GetRecords,
+    PostRecord,
+    MenuAction,
 }

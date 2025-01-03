@@ -5,11 +5,11 @@ use ratatui::{
     prelude::{Backend, Terminal},
     style::{Color, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Padding, Paragraph, Wrap},
+    widgets::{Block, Borders, List, ListItem, Padding, Paragraph, Wrap},
     Frame,
 };
 
-use crate::constants::Screen;
+use crate::constants::{Page, MENU_ITEMS};
 use crate::state::State;
 
 #[derive(Debug, Default)]
@@ -23,10 +23,12 @@ impl View {
         terminal.draw(|frame| {
             let area = frame.size();
 
-            match state.screen {
-                Screen::Game => View::draw_main_screene(frame, area, state),
-                Screen::Menu => View::draw_menu_screene(frame, area, state),
-                Screen::CountDown => View::draw_countdown_screene(frame, area, state),
+            match state.page {
+                Page::Game => View::draw_main_page(frame, area, state),
+                Page::Menu => View::draw_menu_page(frame, area, state),
+                Page::CountDown => View::draw_countdown_page(frame, area, state),
+                Page::Records => View::draw_records_page(frame, area, state),
+                Page::GameResult => View::draw_game_result_page(frame, area, state),
             }
         })?;
         Ok(())
@@ -46,7 +48,7 @@ impl View {
         (outer_layout, inner_layout)
     }
 
-    fn draw_main_screene(frame: &mut Frame, area: Rect, state: &State) {
+    fn draw_main_page(frame: &mut Frame, area: Rect, state: &State) {
         let chunks = View::get_chunks(area);
         let outer_layout = chunks.0;
         let inner_layout = chunks.1;
@@ -88,27 +90,39 @@ impl View {
         View::draw_error(frame, state, inner_layout[1]);
     }
 
-    fn draw_menu_screene(frame: &mut Frame, area: Rect, state: &State) {
+    fn draw_menu_page(frame: &mut Frame, area: Rect, state: &State) {
         let chunks = View::get_chunks(area);
         let outer_layout = chunks.0;
         let inner_layout = chunks.1;
+        let menu_index = state.get_menu_index();
 
         let title = Line::from(" typefast ");
-        let widget = Paragraph::new("Menu")
-            .alignment(Alignment::Center)
-            .block(
-                Block::bordered()
-                    .title(title.centered())
-                    .padding(Padding::new(3, 3, 1, 1)),
-            )
-            .wrap(Wrap { trim: true });
+        let list = List::new(
+            MENU_ITEMS
+                .iter()
+                .enumerate()
+                .map(|(i, item)| {
+                    let indicator = if i == menu_index as usize { "•" } else { " " };
+                    ListItem::new(format!("{} {}", indicator, item))
+                })
+                .collect::<Vec<ListItem>>(),
+        )
+        .block(
+            Block::bordered()
+                .title(title)
+                .padding(Padding::new(3, 3, 1, 1)),
+        );
 
-        frame.render_widget(widget, outer_layout[0]);
-        View::draw_legend(frame, "Press enter to start", inner_layout[0]);
+        frame.render_widget(list, outer_layout[0]);
+        View::draw_legend(
+            frame,
+            "esc: Exit, enter: Select, ↑: Up, ↓: Down",
+            inner_layout[0],
+        );
         View::draw_error(frame, state, inner_layout[1]);
     }
 
-    fn draw_countdown_screene(frame: &mut Frame, area: Rect, state: &State) {
+    fn draw_countdown_page(frame: &mut Frame, area: Rect, state: &State) {
         let chunks = View::get_chunks(area);
         let outer_layout = chunks.0;
         let inner_layout = chunks.1;
@@ -118,13 +132,68 @@ impl View {
             .alignment(Alignment::Center)
             .block(
                 Block::bordered()
-                    .title(title.centered())
+                    .title(title)
                     .padding(Padding::new(3, 3, 1, 1)),
             )
             .wrap(Wrap { trim: true });
 
         frame.render_widget(widget, outer_layout[0]);
 
+        View::draw_error(frame, state, inner_layout[1]);
+    }
+
+    fn draw_records_page(frame: &mut Frame, area: Rect, state: &State) {
+        let chunks = View::get_chunks(area);
+        let outer_layout = chunks.0;
+        let inner_layout = chunks.1;
+
+        let title = Line::from(" typefast ");
+        let records = state.get_records();
+        let list = List::new(if records.is_empty() {
+            vec![ListItem::new("No records yet")]
+        } else {
+            records
+                .iter()
+                .map(|record| {
+                    ListItem::new(format!(
+                        "{} - {}wpm {}cpm",
+                        record.date, record.wpm, record.cpm
+                    ))
+                })
+                .collect::<Vec<ListItem>>()
+        })
+        .block(
+            Block::bordered()
+                .title(title)
+                .padding(Padding::new(3, 3, 1, 1)),
+        );
+
+        frame.render_widget(list, outer_layout[0]);
+        View::draw_legend(frame, "esc: Exit", inner_layout[0]);
+        View::draw_error(frame, state, inner_layout[1]);
+    }
+
+    fn draw_game_result_page(frame: &mut Frame, area: Rect, state: &State) {
+        let chunks = View::get_chunks(area);
+        let outer_layout = chunks.0;
+        let inner_layout = chunks.1;
+
+        let title = Line::from(" typefast ");
+        let widget = Paragraph::new(format!(
+            "Congrats! You typed {} words and {} characters in 60s! Would you like to save this record?",
+            state.get_word_count(),
+            state.get_char_count(),
+        ))
+        .alignment(Alignment::Center)
+        .block(
+            Block::bordered()
+                .title(title)
+                .padding(Padding::new(3, 3, 1, 1)),
+        )
+        .wrap(Wrap { trim: true });
+
+        frame.render_widget(widget, outer_layout[0]);
+        View::draw_legend(frame, "esc: Exit, enter: Save", inner_layout[0]);
         View::draw_error(frame, state, inner_layout[1]);
     }
 

@@ -16,7 +16,7 @@ use crate::util::{calculate_char_speed, calculate_word_speed};
 use crate::view::View;
 use crate::{client::Client, filesystem};
 use crate::{
-    constants::{Action, Screen, COUNTDOWN_DURATION, GAME_DURATION},
+    constants::{Action, Page, COUNTDOWN_DURATION, GAME_DURATION},
     filesystem::get_words,
 };
 
@@ -117,21 +117,51 @@ impl Controller {
                     self.state.set_is_running(false);
                 }
             }
-            Action::ChangeScreene(screen) => {
-                match screen {
-                    Screen::CountDown => {
+            Action::ChangePage(page) => {
+                match page {
+                    Page::CountDown => {
                         self.setup_timer(COUNTDOWN_DURATION);
-                        self.state.set_next_screen(Screen::Game);
+                        self.state.set_next_page(Page::Game);
                     }
-                    Screen::Game => {
+                    Page::Game => {
                         self.setup_timer(GAME_DURATION);
-                        self.state.set_next_screen(Screen::Menu);
+                        self.state.set_next_page(Page::GameResult);
                     }
-                    Screen::Menu => {
-                        self.state.set_next_screen(Screen::CountDown);
+                    Page::Menu => {
+                        self.state.set_next_page(Page::CountDown);
+                    }
+                    Page::Records => {
+                        self.handle_action(Action::GetRecords);
+                        self.stop_timer();
+                    }
+                    Page::GameResult => {
+                        self.stop_timer();
+                        self.handle_action(Action::PostRecord);
+                        self.handle_action(Action::ChangePage(Page::Menu));
                     }
                 }
-                self.state.set_screen(screen);
+                self.state.set_page(page);
+            }
+            Action::GetRecords => match self.client.get_records() {
+                Ok(records) => {
+                    self.state.set_records(records);
+                }
+                Err(_) => {
+                    self.state.set_error("Could not get records".to_string());
+                }
+            },
+            Action::PostRecord => {
+                let wpm = self.state.get_word_speed();
+                let cpm = self.state.get_char_speed();
+                let date = "date";
+                if self.client.create_record(wpm, cpm, date.to_string()).is_err() {
+                    self.state.set_error("Could not Save record".to_string());
+                }
+            }
+            Action::MenuAction => {
+                let menu_index = self.state.get_menu_index();
+                let new_index = if menu_index <= 0 { 1 } else { 0 };
+                self.state.set_menu_index(new_index);
             }
             Action::Empty => {}
         }
@@ -141,17 +171,28 @@ impl Controller {
         match key_code {
             KeyCode::Esc => {
                 self.stop_timer();
-                match self.state.get_screen() {
-                    Screen::Menu => Action::Exit,
-                    Screen::CountDown => Action::ChangeScreene(Screen::Menu),
-                    Screen::Game => Action::ChangeScreene(Screen::Menu),
+                match self.state.get_page() {
+                    Page::Menu => Action::Exit,
+                    _ => Action::ChangePage(Page::Menu),
                 }
             }
-            KeyCode::Enter => match self.state.get_screen() {
-                Screen::Menu => Action::ChangeScreene(Screen::CountDown),
+            KeyCode::Enter => match self.state.get_page() {
+                Page::Menu => {
+                    if self.state.get_menu_index() == 0 {
+                        Action::ChangePage(Page::CountDown)
+                    } else {
+                        Action::ChangePage(Page::Records)
+                    }
+                }
+                Page::GameResult => Action::ChangePage(Page::Menu),
                 _ => Action::Empty,
             },
-            KeyCode::Char(user_input) => Action::CharInput(user_input),
+            KeyCode::Char(user_input) => match self.state.get_page() {
+                Page::Game => Action::CharInput(user_input),
+                _ => Action::Empty,
+            },
+            KeyCode::Down => Action::MenuAction,
+            KeyCode::Up => Action::MenuAction,
             _ => Action::Empty,
         }
     }
@@ -214,10 +255,12 @@ impl Controller {
                 }
 
                 if time_value == 0 {
-                    let action = match self.state.get_next_screen() {
-                        Screen::Game => Action::ChangeScreene(Screen::Game),
-                        Screen::Menu => Action::ChangeScreene(Screen::Menu),
-                        Screen::CountDown => Action::ChangeScreene(Screen::CountDown),
+                    let action = match self.state.get_next_page() {
+                        Page::Game => Action::ChangePage(Page::Game),
+                        Page::Menu => Action::ChangePage(Page::Menu),
+                        Page::CountDown => Action::ChangePage(Page::CountDown),
+                        Page::Records => Action::Empty,
+                        Page::GameResult => Action::ChangePage(Page::GameResult),
                     };
                     drop(time);
                     self.stop_timer();
