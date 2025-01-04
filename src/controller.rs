@@ -28,11 +28,11 @@ pub struct Controller {
 
 #[derive(Error, Debug)]
 pub enum ControllerError {
-    #[error("Database client error: {0}")]
+    #[error("{0}")]
     ClientError(#[from] ClientError),
-    #[error("File system error: {0}")]
+    #[error("{0}")]
     FileSystemError(#[from] FileSystemError),
-    #[error("View error: {0}")]
+    #[error("{0}")]
     ViewError(#[from] ViewError),
     #[error("Encountered with error while handling keyboard events: {0}")]
     HandleEventError(DynamicError),
@@ -131,13 +131,13 @@ impl Controller {
                         self.state.set_next_page(Page::CountDown);
                     }
                     Page::Records => {
-                        self.handle_action(Action::GetRecords).ok();
+                        self.handle_action(Action::GetRecords)?;
                         self.stop_timer();
                     }
                     Page::GameResult => {
                         self.stop_timer();
-                        self.handle_action(Action::PostRecord).ok();
-                        self.handle_action(Action::ChangePage(Page::Menu)).ok();
+                        self.handle_action(Action::PostRecord)?;
+                        self.handle_action(Action::ChangePage(Page::Menu))?;
                     }
                 }
                 self.state.set_page(page);
@@ -198,7 +198,7 @@ impl Controller {
             if let event::Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press {
                     let action = self.handle_key_stroke(key.code);
-                    self.handle_action(action).ok();
+                    self.handle_action(action)?;
                 }
             }
         }
@@ -206,13 +206,11 @@ impl Controller {
     }
 
     pub fn init_controller(&mut self) -> Result<(), ControllerError> {
+        self.handle_action(Action::Init)?;
         let app_config_path = get_app_config_path()?;
         create_config_folder(&app_config_path)?;
-
         self.client.open_connection(app_config_path, DB_NAME)?;
         self.client.create_records_table()?;
-
-        self.handle_action(Action::Init).ok();
         Ok(())
     }
 
@@ -222,19 +220,21 @@ impl Controller {
     }
 
     pub fn run<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> Result<(), ControllerError> {
-        // this line sets the global
-        self.init_controller()
-            .map_err(|e| self.state.set_error(e.to_string()))
-            .ok();
-
+        // this line sets the global error
+        let _ = self
+            .init_controller()
+            .map_err(|e| self.state.set_error(e.to_string()));
         while self.state.get_is_running() {
             let _ = self.handle_events().map_err(|e| {
                 self.state
                     .set_error(ControllerError::HandleEventError(e).to_string())
             });
-            View::draw(terminal, &self.state).map_err(|e| {
-                self.state.set_error(ControllerError::ViewError(e).to_string())
-            }).ok();
+            View::draw(terminal, &self.state)
+                .map_err(|e| {
+                    self.state
+                        .set_error(ControllerError::ViewError(e).to_string())
+                })
+                .ok();
 
             if self.timer_running.load(Ordering::SeqCst) {
                 let time = self.remaining_time.lock().unwrap();
@@ -265,7 +265,9 @@ impl Controller {
                     };
                     drop(time);
                     self.stop_timer();
-                    self.handle_action(action).ok();
+                    self.handle_action(action)
+                        .map_err(|e| self.state.set_error(e.to_string()))
+                        .ok();
                 }
             }
             thread::sleep(Duration::from_millis(5));

@@ -77,7 +77,7 @@ impl Client {
                     Err(e) => Err(ClientError::CreateRecordsTableError(e)),
                 }
             }
-            Err(_) => Err(ClientError::GetConnectionError()),
+            Err(e) => Err(e),
         }
     }
 
