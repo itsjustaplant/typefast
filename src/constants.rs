@@ -1,3 +1,5 @@
+pub use std::fmt;
+
 pub const APP_PATH: &str = "typefast";
 pub const DB_NAME: &str = "typefast.db";
 pub const GAME_DURATION: u64 = 60;
@@ -28,7 +30,7 @@ pub const TEST_WORDS: [&str; 21] = [
 pub const WORD_LIST: &str = include_str!("../assets/word_list.txt");
 pub const MENU_ITEMS: [&str; 2] = ["Start", "Records"];
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, Copy, Clone)]
 pub enum Page {
     Game,
     #[default]
@@ -36,6 +38,18 @@ pub enum Page {
     CountDown,
     Records,
     GameResult,
+}
+
+impl fmt::Display for Page {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Page::Game => write!(f, "Game"),
+            Page::Menu => write!(f, "Menu"),
+            Page::CountDown => write!(f, "CountDown"),
+            Page::Records => write!(f, "Records"),
+            Page::GameResult => write!(f, "GameResult"),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq)]

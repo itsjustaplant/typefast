@@ -1,5 +1,5 @@
 use std::fs;
-use std::io::Error;
+use std::io::Error as StandardError;
 use std::path::PathBuf;
 
 use dirs;
@@ -13,7 +13,7 @@ pub enum FileSystemError {
     #[error("Could not get config directory path")]
     GetAppConfigPath(),
     #[error("Could not create config folder: {0}")]
-    CreateConfigFolder(Error),
+    CreateConfigFolder(StandardError),
 }
 
 pub fn get_app_config_path() -> Result<PathBuf, FileSystemError> {

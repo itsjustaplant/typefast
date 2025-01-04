@@ -9,16 +9,12 @@ use crossterm::event::{self, KeyCode, KeyEventKind};
 use ratatui::prelude::{Backend, Terminal};
 use thiserror::Error;
 
-use crate::constants::DB_NAME;
-use crate::filesystem::{create_config_folder, get_app_config_path};
+use crate::client::{Client, ClientError};
+use crate::constants::{Action, Page, COUNTDOWN_DURATION, DB_NAME, GAME_DURATION};
+use crate::filesystem::{create_config_folder, get_app_config_path, get_words, FileSystemError};
 use crate::state::State;
 use crate::util::{calculate_char_speed, calculate_word_speed, get_current_datetime};
-use crate::view::View;
-use crate::{client::Client, filesystem};
-use crate::{
-    constants::{Action, Page, COUNTDOWN_DURATION, GAME_DURATION},
-    filesystem::get_words,
-};
+use crate::view::{View, ViewError};
 
 type DynamicError = Box<dyn std::error::Error>;
 
@@ -32,6 +28,12 @@ pub struct Controller {
 
 #[derive(Error, Debug)]
 pub enum ControllerError {
+    #[error("Database client error: {0}")]
+    ClientError(#[from] ClientError),
+    #[error("File system error: {0}")]
+    FileSystemError(#[from] FileSystemError),
+    #[error("View error: {0}")]
+    ViewError(#[from] ViewError),
     #[error("Encountered with error while handling keyboard events: {0}")]
     HandleEventError(DynamicError),
 }
@@ -76,7 +78,7 @@ impl Controller {
         self.timer_running.store(false, Ordering::SeqCst);
     }
 
-    pub fn handle_action(&mut self, action: Action) {
+    pub fn handle_action(&mut self, action: Action) -> Result<(), ControllerError> {
         match action {
             Action::Init => {
                 self.state.set_is_running(true);
@@ -84,7 +86,6 @@ impl Controller {
                     .iter()
                     .map(|word| word.to_string())
                     .collect::<Vec<String>>();
-                // self.state.set_words(&parsed_words);
                 let parsed_paragraph = parsed_words
                     .iter()
                     .map(|word| word.to_lowercase())
@@ -94,14 +95,13 @@ impl Controller {
             }
             Action::Exit => {
                 self.state.set_is_running(false);
-                self.exit().expect("Could not exit");
+                self.exit()?;
             }
             Action::CharInput(user_input) => {
                 let current_position = self.state.get_position() as usize;
                 if let Some(current_character) =
                     self.state.get_paragraph().chars().nth(current_position)
                 {
-                    // self.state.set_error(user_input.to_string());
                     if current_character == user_input {
                         self.state.set_position((current_position + 1) as i32);
 
@@ -131,36 +131,27 @@ impl Controller {
                         self.state.set_next_page(Page::CountDown);
                     }
                     Page::Records => {
-                        self.handle_action(Action::GetRecords);
+                        self.handle_action(Action::GetRecords).ok();
                         self.stop_timer();
                     }
                     Page::GameResult => {
                         self.stop_timer();
-                        self.handle_action(Action::PostRecord);
-                        self.handle_action(Action::ChangePage(Page::Menu));
+                        self.handle_action(Action::PostRecord).ok();
+                        self.handle_action(Action::ChangePage(Page::Menu)).ok();
                     }
                 }
                 self.state.set_page(page);
             }
-            Action::GetRecords => match self.client.get_records() {
-                Ok(records) => {
-                    self.state.set_records(records);
-                }
-                Err(_) => {
-                    self.state.set_error("Could not get records".to_string());
-                }
-            },
+            Action::GetRecords => {
+                let records = self.client.get_records()?;
+                self.state.set_records(records);
+            }
+
             Action::PostRecord => {
                 let wpm = self.state.get_word_speed();
                 let cpm = self.state.get_char_speed();
                 let date = get_current_datetime();
-                if self
-                    .client
-                    .create_record(wpm, cpm, date.to_string())
-                    .is_err()
-                {
-                    self.state.set_error("Could not Save record".to_string());
-                }
+                self.client.create_record(wpm, cpm, date)?;
             }
             Action::MenuAction => {
                 let menu_index = self.state.get_menu_index();
@@ -169,6 +160,7 @@ impl Controller {
             }
             Action::Empty => {}
         }
+        Ok(())
     }
 
     pub fn handle_key_stroke(&mut self, key_code: KeyCode) -> Action {
@@ -206,38 +198,43 @@ impl Controller {
             if let event::Event::Key(key) = event::read()? {
                 if key.kind == KeyEventKind::Press {
                     let action = self.handle_key_stroke(key.code);
-                    self.handle_action(action);
+                    self.handle_action(action).ok();
                 }
             }
         }
         Ok(())
     }
 
-    pub fn init_controller(&mut self) -> Result<(), DynamicError> {
+    pub fn init_controller(&mut self) -> Result<(), ControllerError> {
         let app_config_path = get_app_config_path()?;
         create_config_folder(&app_config_path)?;
 
-        filesystem::create_config_folder(&app_config_path)?;
         self.client.open_connection(app_config_path, DB_NAME)?;
         self.client.create_records_table()?;
 
-        self.handle_action(Action::Init);
+        self.handle_action(Action::Init).ok();
         Ok(())
     }
 
-    pub fn exit(&mut self) -> Result<(), DynamicError> {
+    pub fn exit(&mut self) -> Result<(), ControllerError> {
         self.client.close_connection()?;
         Ok(())
     }
 
-    pub fn run<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> Result<(), DynamicError> {
-        self.init_controller()?;
+    pub fn run<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> Result<(), ControllerError> {
+        // this line sets the global
+        self.init_controller()
+            .map_err(|e| self.state.set_error(e.to_string()))
+            .ok();
 
         while self.state.get_is_running() {
-            let _ = self
-                .handle_events()
-                .map_err(ControllerError::HandleEventError);
-            View::draw(terminal, &self.state)?;
+            let _ = self.handle_events().map_err(|e| {
+                self.state
+                    .set_error(ControllerError::HandleEventError(e).to_string())
+            });
+            View::draw(terminal, &self.state).map_err(|e| {
+                self.state.set_error(ControllerError::ViewError(e).to_string())
+            }).ok();
 
             if self.timer_running.load(Ordering::SeqCst) {
                 let time = self.remaining_time.lock().unwrap();
@@ -268,7 +265,7 @@ impl Controller {
                     };
                     drop(time);
                     self.stop_timer();
-                    self.handle_action(action);
+                    self.handle_action(action).ok();
                 }
             }
             thread::sleep(Duration::from_millis(5));

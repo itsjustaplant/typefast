@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{io::Error as StandardError, rc::Rc};
 
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -8,6 +8,7 @@ use ratatui::{
     widgets::{Block, Borders, List, ListItem, Padding, Paragraph, Wrap},
     Frame,
 };
+use thiserror::Error;
 
 use crate::constants::{Page, MENU_ITEMS};
 use crate::state::State;
@@ -15,22 +16,28 @@ use crate::state::State;
 #[derive(Debug, Default)]
 pub struct View {}
 
-impl View {
-    pub fn draw<B: Backend>(
-        terminal: &mut Terminal<B>,
-        state: &State,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        terminal.draw(|frame| {
-            let area = frame.size();
+#[derive(Error, Debug)]
+pub enum ViewError {
+    #[error("Could not draw view: {0} because of {1}")]
+    DrawError(Page, StandardError),
+}
 
-            match state.page {
-                Page::Game => View::draw_main_page(frame, area, state),
-                Page::Menu => View::draw_menu_page(frame, area, state),
-                Page::CountDown => View::draw_countdown_page(frame, area, state),
-                Page::Records => View::draw_records_page(frame, area, state),
-                Page::GameResult => View::draw_game_result_page(frame, area, state),
-            }
-        })?;
+impl View {
+    pub fn draw<B: Backend>(terminal: &mut Terminal<B>, state: &State) -> Result<(), ViewError> {
+        terminal
+            .draw(|frame| {
+                let area = frame.size();
+
+                match state.page {
+                    Page::Game => View::draw_main_page(frame, area, state),
+                    Page::Menu => View::draw_menu_page(frame, area, state),
+                    Page::CountDown => View::draw_countdown_page(frame, area, state),
+                    Page::Records => View::draw_records_page(frame, area, state),
+                    Page::GameResult => View::draw_game_result_page(frame, area, state),
+                }
+            })
+            .map_err(|e| ViewError::DrawError(state.page, e))
+            .ok();
         Ok(())
     }
 

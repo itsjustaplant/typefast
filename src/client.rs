@@ -1,7 +1,7 @@
-use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
 
-use rusqlite::{Connection, Result};
+use rusqlite::{Connection, Error as RusqliteError, Result};
+use thiserror::Error;
 
 use crate::record::Record;
 
@@ -10,14 +10,27 @@ pub struct Client {
     pub connection: Option<Connection>,
 }
 
+#[derive(Error, Debug)]
+pub enum ClientError {
+    #[error("Could not get connection")]
+    GetConnectionError(),
+    #[error("Could not open connection: {0}")]
+    OpenConnectionError(RusqliteError),
+    #[error("Could not close connection")]
+    CloseConnectionError(),
+    #[error("Could not create records table: {0}")]
+    CreateRecordsTableError(RusqliteError),
+    #[error("Could not get records")]
+    GetRecordsError(),
+    #[error("Could not insert record")]
+    InsertRecordError(RusqliteError),
+}
+
 impl Client {
-    pub fn get_connection(&self) -> Result<&Connection, Error> {
+    pub fn get_connection(&self) -> Result<&Connection, ClientError> {
         match &self.connection {
             Some(connection) => Ok(connection),
-            None => Err(Error::new(
-                ErrorKind::Other,
-                String::from("Could not open connection"),
-            )),
+            None => Err(ClientError::GetConnectionError()),
         }
     }
 
@@ -25,7 +38,7 @@ impl Client {
         &mut self,
         mut app_config_path: PathBuf,
         db_name: &str,
-    ) -> Result<(), Error> {
+    ) -> Result<(), ClientError> {
         app_config_path.push(db_name);
 
         match Connection::open(app_config_path) {
@@ -33,23 +46,20 @@ impl Client {
                 self.connection = Some(connection);
                 Ok(())
             }
-            Err(e) => Err(Error::new(
-                ErrorKind::Other,
-                format!("Could not open connection, e: {}", e),
-            )),
+            Err(e) => Err(ClientError::OpenConnectionError(e)),
         }
     }
 
-    pub fn close_connection(&mut self) -> Result<(), Error> {
+    pub fn close_connection(&mut self) -> Result<(), ClientError> {
         match self.connection.take() {
             Some(connection) => connection
                 .close()
-                .map_err(|_| Error::new(ErrorKind::Other, "Could not close connection")),
-            None => Err(Error::new(ErrorKind::Other, "Could not find connection")),
+                .map_err(|_| ClientError::CloseConnectionError()),
+            None => Err(ClientError::GetConnectionError()),
         }
     }
 
-    pub fn create_records_table(&self) -> Result<usize, Error> {
+    pub fn create_records_table(&self) -> Result<usize, ClientError> {
         let query = "CREATE TABLE IF NOT EXISTS records (
                      id INTEGER NOT NULL PRIMARY KEY,
                      wpm INTEGER NOT NULL,
@@ -64,49 +74,50 @@ impl Client {
                 match result {
                     Ok(r) => Ok(r),
                     // How do i test here
-                    Err(e) => Err(Error::new(
-                        ErrorKind::Other,
-                        format!("Could not create todos table, e: {}", e),
-                    )),
+                    Err(e) => Err(ClientError::CreateRecordsTableError(e)),
                 }
             }
-            Err(e) => Err(Error::new(
-                ErrorKind::Other,
-                format!("Could not get connection, e: {}", e),
-            )),
+            Err(_) => Err(ClientError::GetConnectionError()),
         }
     }
 
-    pub fn get_records(&self) -> Result<Vec<Record>, Box<dyn std::error::Error>> {
-        let mut stmt = self.get_connection()?.prepare("SELECT * FROM records")?;
-        let rows = stmt.query_map([], |row| {
+    pub fn get_records(&self) -> Result<Vec<Record>, ClientError> {
+        let mut stmt =
+            if let Ok(statement) = self.get_connection()?.prepare("SELECT * FROM records") {
+                statement
+            } else {
+                return Err(ClientError::GetRecordsError());
+            };
+        let rows = if let Ok(rows) = stmt.query_map([], |row| {
             Ok(Record {
                 id: row.get(0)?,
                 wpm: row.get(1)?,
                 cpm: row.get(2)?,
                 date: row.get(3)?,
             })
-        })?;
+        }) {
+            rows
+        } else {
+            return Err(ClientError::GetRecordsError());
+        };
 
         let mut records = Vec::new();
         for record in rows {
-            records.push(record?);
+            match record {
+                Ok(r) => records.push(r),
+                Err(_) => Err(ClientError::GetRecordsError())?,
+            }
         }
 
         Ok(records)
     }
 
-    pub fn create_record(&self, wpm: i64, cpm: i64, date: String) -> Result<usize, Error> {
+    pub fn create_record(&self, wpm: i64, cpm: i64, date: String) -> Result<usize, ClientError> {
         self.get_connection()?
             .execute(
                 "INSERT INTO records (wpm, cpm, date) VALUES(?1, ?2, ?3)",
                 (wpm, cpm, date),
             )
-            .map_err(|e| {
-                Error::new(
-                    ErrorKind::Other,
-                    format!("Could not insert record, e: {}", e),
-                )
-            })
+            .map_err(ClientError::InsertRecordError)
     }
 }
