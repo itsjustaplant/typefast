@@ -12,7 +12,7 @@ use thiserror::Error;
 use crate::constants::DB_NAME;
 use crate::filesystem::{create_config_folder, get_app_config_path};
 use crate::state::State;
-use crate::util::{calculate_char_speed, calculate_word_speed};
+use crate::util::{calculate_char_speed, calculate_word_speed, get_current_datetime};
 use crate::view::View;
 use crate::{client::Client, filesystem};
 use crate::{
@@ -153,8 +153,12 @@ impl Controller {
             Action::PostRecord => {
                 let wpm = self.state.get_word_speed();
                 let cpm = self.state.get_char_speed();
-                let date = "date";
-                if self.client.create_record(wpm, cpm, date.to_string()).is_err() {
+                let date = get_current_datetime();
+                if self
+                    .client
+                    .create_record(wpm, cpm, date.to_string())
+                    .is_err()
+                {
                     self.state.set_error("Could not Save record".to_string());
                 }
             }
