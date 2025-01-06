@@ -63,3 +63,46 @@ pub enum Action {
     PostRecord,
     MenuAction,
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_page_display() {
+        assert_eq!(Page::Game.to_string(), "Game");
+        assert_eq!(Page::Menu.to_string(), "Menu");
+        assert_eq!(Page::CountDown.to_string(), "CountDown");
+        assert_eq!(Page::Records.to_string(), "Records");
+        assert_eq!(Page::GameResult.to_string(), "GameResult");
+    }
+
+    #[test]
+    fn test_page_default() {
+        assert_eq!(Page::default(), Page::Menu);
+    }
+
+    #[test]
+    fn test_action_variants() {
+        assert_eq!(Action::Init, Action::Init);
+        assert_eq!(Action::Empty, Action::Empty);
+        assert_eq!(Action::Exit, Action::Exit);
+        assert_eq!(Action::CharInput('a'), Action::CharInput('a'));
+        assert_eq!(
+            Action::ChangePage(Page::Game),
+            Action::ChangePage(Page::Game)
+        );
+        assert_eq!(Action::GetRecords, Action::GetRecords);
+        assert_eq!(Action::PostRecord, Action::PostRecord);
+        assert_eq!(Action::MenuAction, Action::MenuAction);
+    }
+
+    #[test]
+    fn test_constants() {
+        assert_eq!(APP_PATH, "typefast");
+        assert_eq!(DB_NAME, "typefast.db");
+        assert_eq!(GAME_DURATION, 60);
+        assert_eq!(COUNTDOWN_DURATION, 3);
+        assert_eq!(TEST_WORDS.len(), 21);
+        assert_eq!(MENU_ITEMS, ["Start", "Records"]);
+    }
+}

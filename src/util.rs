@@ -21,3 +21,29 @@ pub fn get_current_datetime() -> String {
     let now = Local::now();
     now.format("%Y-%m-%d %H:%M:%S").to_string()
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_calculate_word_speed() {
+        assert_eq!(calculate_word_speed(120, 60), 120);
+        assert_eq!(calculate_word_speed(0, 60), 0);
+        assert_eq!(calculate_word_speed(120, 0), 0);
+        assert_eq!(calculate_word_speed(60, 120), 30);
+    }
+
+    #[test]
+    fn test_calculate_char_speed() {
+        assert_eq!(calculate_char_speed(600, 60), 600);
+        assert_eq!(calculate_char_speed(0, 60), 0);
+        assert_eq!(calculate_char_speed(600, 0), 0);
+        assert_eq!(calculate_char_speed(300, 120), 150);
+    }
+
+    #[test]
+    fn test_get_current_datetime() {
+        let datetime = get_current_datetime();
+        assert!(datetime.len() > 0);
+    }
+}

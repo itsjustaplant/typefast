@@ -114,3 +114,121 @@ impl State {
         self.menu_index = menu_index;
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_state_initialization() {
+        let state = State::new();
+        assert_eq!(state.is_running, false);
+        assert_eq!(state.page, Page::default());
+        assert_eq!(state.next_page, Page::default());
+        assert_eq!(state.error, "");
+        assert_eq!(state.position, 0);
+        assert_eq!(state.paragraph, "");
+        assert_eq!(state.timer, 0);
+        assert_eq!(state.char_count, 0);
+        assert_eq!(state.word_count, 0);
+        assert_eq!(state.char_speed, 0);
+        assert_eq!(state.word_speed, 0);
+        assert!(state.records.is_empty());
+        assert_eq!(state.menu_index, 0);
+    }
+
+    #[test]
+    fn test_set_get_is_running() {
+        let mut state = State::new();
+        state.set_is_running(true);
+        assert_eq!(state.get_is_running(), true);
+    }
+
+    #[test]
+    fn test_set_get_error() {
+        let mut state = State::new();
+        let error_message = String::from("An error occurred");
+        state.set_error(error_message.clone());
+        assert_eq!(state.get_error(), &error_message);
+    }
+
+    #[test]
+    fn test_set_get_page() {
+        let mut state = State::new();
+        let page = Page::default();
+        state.set_page(page.clone());
+        assert_eq!(state.get_page(), &page);
+    }
+
+    #[test]
+    fn test_set_get_next_page() {
+        let mut state = State::new();
+        let next_page = Page::default();
+        state.set_next_page(next_page.clone());
+        assert_eq!(state.get_next_page(), &next_page);
+    }
+
+    #[test]
+    fn test_set_get_position() {
+        let mut state = State::new();
+        state.set_position(10);
+        assert_eq!(state.get_position(), 10);
+    }
+
+    #[test]
+    fn test_set_get_paragraph() {
+        let mut state = State::new();
+        let paragraph = String::from("This is a test paragraph.");
+        state.set_paragraph(paragraph.clone());
+        assert_eq!(state.get_paragraph(), &paragraph);
+    }
+
+    #[test]
+    fn test_set_get_timer() {
+        let mut state = State::new();
+        state.set_timer(100);
+        assert_eq!(state.get_timer(), 100);
+    }
+
+    #[test]
+    fn test_set_get_word_count() {
+        let mut state = State::new();
+        state.set_word_count(50);
+        assert_eq!(state.get_word_count(), 50);
+    }
+
+    #[test]
+    fn test_set_get_char_count() {
+        let mut state = State::new();
+        state.set_char_count(200);
+        assert_eq!(state.get_char_count(), 200);
+    }
+
+    #[test]
+    fn test_set_get_char_speed() {
+        let mut state = State::new();
+        state.set_char_speed(30);
+        assert_eq!(state.get_char_speed(), 30);
+    }
+
+    #[test]
+    fn test_set_get_word_speed() {
+        let mut state = State::new();
+        state.set_word_speed(15);
+        assert_eq!(state.get_word_speed(), 15);
+    }
+
+    #[test]
+    fn test_set_get_records() {
+        let mut state = State::new();
+        let records = vec![Record::default()];
+        state.set_records(records.clone());
+        assert_eq!(state.get_records(), &records);
+    }
+
+    #[test]
+    fn test_set_get_menu_index() {
+        let mut state = State::new();
+        state.set_menu_index(2);
+        assert_eq!(state.get_menu_index(), 2);
+    }
+}

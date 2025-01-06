@@ -220,3 +220,73 @@ impl View {
         frame.render_widget(widget, area);
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ratatui::backend::TestBackend;
+
+    #[test]
+    fn test_draw_game_page() {
+        let backend = TestBackend::new(80, 24);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let state = State {
+            page: Page::Game,
+            ..State::default()
+        };
+
+        let result = View::draw(&mut terminal, &state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_draw_menu_page() {
+        let backend = TestBackend::new(80, 24);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let state = State {
+            page: Page::Menu,
+            ..State::default()
+        };
+
+        let result = View::draw(&mut terminal, &state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_draw_countdown_page() {
+        let backend = TestBackend::new(80, 24);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let state = State {
+            page: Page::CountDown,
+            ..State::default()
+        };
+
+        let result = View::draw(&mut terminal, &state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_draw_records_page() {
+        let backend = TestBackend::new(80, 24);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let state = State {
+            page: Page::Records,
+            ..State::default()
+        };
+
+        let result = View::draw(&mut terminal, &state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_draw_game_result_page() {
+        let backend = TestBackend::new(80, 24);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let state = State {
+            page: Page::GameResult,
+            ..State::default()
+        };
+
+        let result = View::draw(&mut terminal, &state);
+        assert!(result.is_ok());
+    }
+}
