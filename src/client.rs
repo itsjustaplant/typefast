@@ -179,4 +179,47 @@ mod tests {
         assert!(result.is_ok());
         assert!(client.connection.is_none());
     }
+
+    #[test]
+    fn test_get_connection_error() {
+        let client = Client::default();
+        let result = client.get_connection();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_close_connection_error() {
+        let mut client = Client::default();
+        let result = client.close_connection();
+        assert!(result.is_err());
+        assert!(client.connection.is_none());
+    }
+
+    #[test]
+    fn test_create_records_table_error() {
+        let client = Client::default();
+        let result = client.create_records_table();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_get_records_error() {
+        let client = Client::default();
+        let result = client.get_records();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_create_record_error() {
+        let client = Client::default();
+        let result = client.create_record(35, 260, "2025-01-04 14:07:25".to_string());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_drop_records_table_error() {
+        let client = Client::default();
+        let result = client.drop_records_table();
+        assert!(result.is_err());
+    }
 }
