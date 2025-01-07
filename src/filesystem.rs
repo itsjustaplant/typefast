@@ -1,6 +1,6 @@
 use std::fs;
 use std::io::Error as StandardError;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use dirs;
 use rand::{seq::SliceRandom, thread_rng};
@@ -41,9 +41,9 @@ pub fn get_words() -> Vec<&'static str> {
         .collect()
 }
 
-pub fn file_exists(app_config_path: &PathBuf, file_name: &str) -> bool {
-  let absolute_path = app_config_path.join(file_name);
-  fs::metadata(&absolute_path).is_ok()
+pub fn file_exists(app_config_path: &Path, file_name: &str) -> bool {
+    let absolute_path = app_config_path.join(file_name);
+    fs::metadata(&absolute_path).is_ok()
 }
 
 #[cfg(test)]
