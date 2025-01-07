@@ -54,9 +54,10 @@ mod tests {
     #[test]
     fn test_file_exists() {
         let mut path = PathBuf::new();
+        let db_name = format!("fs_{TEST_DB_NAME}");
         path.push(TEST_APP_PATH);
 
-        let correct_result = file_exists(&path, TEST_DB_NAME);
+        let correct_result = file_exists(&path, db_name.as_str());
         let wrong_result = file_exists(&path, "idk.db");
 
         assert_eq!(correct_result, true);

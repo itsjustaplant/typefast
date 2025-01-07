@@ -145,7 +145,8 @@ mod tests {
     fn test_client_operations() {
         // OPEN CONNECTION TEST
         let mut client = Client::default();
-        let result = client.open_connection(get_test_db_path(), TEST_DB_NAME);
+        let db_name = format!("client_{TEST_DB_NAME}");
+        let result = client.open_connection(get_test_db_path(), db_name.as_str());
         assert!(result.is_ok());
         assert!(client.connection.is_some());
 

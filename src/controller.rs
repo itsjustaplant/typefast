@@ -275,3 +275,139 @@ impl Controller {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::constants::{TEST_APP_PATH, TEST_DB_NAME};
+    use std::path::{Path, PathBuf};
+
+    fn get_test_db_path() -> PathBuf {
+        let db_path = Path::new(TEST_APP_PATH);
+        db_path.to_path_buf()
+    }
+
+    #[test]
+    fn test_handle_action() {
+        // CONTROLLER RUNNING STATE TEST
+        let mut controller = Controller::new();
+        assert_eq!(controller.state.get_is_running(), false);
+
+        let db_name = format!("controller_{TEST_DB_NAME}");
+        let result = controller
+            .client
+            .open_connection(get_test_db_path(), db_name.as_str());
+        assert!(result.is_ok());
+        let result = controller.client.create_records_table();
+        assert!(result.is_ok());
+
+        // INIT CONTROLLER TEST
+        let action = Action::Init;
+        let result = controller.handle_action(action);
+        assert!(result.is_ok());
+        assert_eq!(controller.state.get_is_running(), true);
+        assert!(controller.state.get_paragraph().len() > 0);
+
+        controller.state.set_paragraph("T E S T".to_string());
+        // HANDLE CHAR INPUT TEST
+        let character = 'T';
+        let action = Action::CharInput(character);
+        let result = controller.handle_action(action);
+        assert!(result.is_ok());
+        assert_eq!(controller.state.get_position(), 1);
+        assert_eq!(controller.state.get_char_count(), 1);
+        assert_eq!(controller.state.get_word_count(), 0);
+
+        // HANDLE WRONG CHAR INPUT TEST
+        let character = 'T';
+        let action = Action::CharInput(character);
+        let result = controller.handle_action(action);
+        assert!(result.is_ok());
+        assert_eq!(controller.state.get_position(), 1);
+        assert_eq!(controller.state.get_char_count(), 1);
+        assert_eq!(controller.state.get_word_count(), 0);
+
+        // HANDLE SPACE INPUT TEST
+        let character = ' ';
+        let action = Action::CharInput(character);
+        let result = controller.handle_action(action);
+        assert!(result.is_ok());
+        assert_eq!(controller.state.get_word_count(), 1);
+
+        // PAGE CHANGE TEST
+        // PAGE::COUNTDOWN
+        let action = Action::ChangePage(Page::CountDown);
+        let result = controller.handle_action(action);
+        assert!(result.is_ok());
+        assert_eq!(controller.state.get_page(), &Page::CountDown);
+        assert_eq!(controller.state.get_next_page(), &Page::Game);
+
+        // PAGE::GAME
+        let action = Action::ChangePage(Page::Game);
+        let result = controller.handle_action(action);
+        assert!(result.is_ok());
+        assert_eq!(controller.state.get_page(), &Page::Game);
+        assert_eq!(controller.state.get_next_page(), &Page::GameResult);
+
+        // PAGE::MENU
+        let action = Action::ChangePage(Page::Menu);
+        let result = controller.handle_action(action);
+        assert!(result.is_ok());
+        assert_eq!(controller.state.get_page(), &Page::Menu);
+        assert_eq!(controller.state.get_next_page(), &Page::CountDown);
+
+        // PAGE::RECORDS
+        let action = Action::ChangePage(Page::Records);
+        let result = controller.handle_action(action);
+        println!("{:?}", result);
+        assert!(result.is_ok());
+        assert_eq!(controller.state.get_page(), &Page::Records);
+
+        // PAGE::GAMERESULT
+        let action = Action::ChangePage(Page::GameResult);
+        let result = controller.handle_action(action);
+        assert!(result.is_ok());
+        assert_eq!(controller.state.get_page(), &Page::GameResult);
+
+        // GET RECORDS TEST
+        let action = Action::GetRecords;
+        let result = controller.handle_action(action);
+        assert!(result.is_ok());
+        assert_eq!(controller.state.get_records().len(), 1);
+
+        controller.state.set_word_speed(35);
+        controller.state.set_char_speed(260);
+        // POST RECORD TEST
+        let action = Action::PostRecord;
+        let result = controller.handle_action(action);
+        assert!(result.is_ok());
+        // GET RECORDS AGAIN -> TODO: instead of doing this post should update the state
+        let action = Action::GetRecords;
+        let result = controller.handle_action(action);
+        assert!(result.is_ok());
+        assert_eq!(controller.state.get_records().len(), 2);
+
+        // MENU ACTION TEST
+        assert_eq!(controller.state.get_menu_index(), 0);
+        let action = Action::MenuAction;
+        let result = controller.handle_action(action);
+        assert!(result.is_ok());
+        assert_eq!(controller.state.get_menu_index(), 1);
+
+        // EMPTY ACTION TEST
+        let action = Action::Empty;
+        let result = controller.handle_action(action);
+        assert!(result.is_ok());
+
+        // DROP TABLE
+        let result = controller.client.drop_records_table();
+        assert!(result.is_ok());
+
+        // EXIT TEST
+        let action = Action::Exit;
+        let result = controller.handle_action(action);
+        assert!(result.is_ok());
+        assert_eq!(controller.state.get_is_running(), false);
+        assert!(controller.client.connection.is_none());
+    }
+}
