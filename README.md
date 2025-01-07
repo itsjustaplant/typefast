@@ -1,4 +1,4 @@
-# typefast
+# typefast [![codecov](https://codecov.io/gh/itsjustaplant/typefast/graph/badge.svg)](https://codecov.io/gh/itsjustaplant/typefast)
 typing test cli app that i built with rust and ratatui
 
 ## disclaimer
