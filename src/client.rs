@@ -129,6 +129,7 @@ impl Client {
             .map_err(ClientError::DropRecordsTableError)
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;

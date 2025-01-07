@@ -220,6 +220,7 @@ impl View {
         frame.render_widget(widget, area);
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;

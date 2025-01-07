@@ -64,13 +64,13 @@ mod tests {
     }
 
     #[test]
-    fn test_config_path() {
+    fn test_get_app_config_path() {
         let app_config_path = get_app_config_path();
         assert!(app_config_path.is_ok());
     }
 
     #[test]
-    fn test_return_ok_if_folder_exist() {
+    fn test_create_config_folder() {
         let mut path = PathBuf::new();
         path.push(TEST_APP_PATH);
 

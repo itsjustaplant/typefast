@@ -65,12 +65,13 @@ pub enum Action {
     PostRecord,
     MenuAction,
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn test_page_display() {
+    fn test_page() {
         assert_eq!(Page::Game.to_string(), "Game");
         assert_eq!(Page::Menu.to_string(), "Menu");
         assert_eq!(Page::CountDown.to_string(), "CountDown");
@@ -84,7 +85,7 @@ mod tests {
     }
 
     #[test]
-    fn test_action_variants() {
+    fn test_action() {
         assert_eq!(Action::Init, Action::Init);
         assert_eq!(Action::Empty, Action::Empty);
         assert_eq!(Action::Exit, Action::Exit);

@@ -21,6 +21,7 @@ pub fn get_current_datetime() -> String {
     let now = Local::now();
     now.format("%Y-%m-%d %H:%M:%S").to_string()
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;

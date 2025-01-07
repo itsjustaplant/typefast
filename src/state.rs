@@ -114,6 +114,7 @@ impl State {
         self.menu_index = menu_index;
     }
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
