@@ -77,4 +77,10 @@ mod tests {
         let result = create_config_folder(&path);
         assert!(result.is_ok());
     }
+
+    #[test]
+    fn test_get_words() {
+        let words = get_words();
+        assert_eq!(words.len(), 100);
+    }
 }
