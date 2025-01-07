@@ -2,6 +2,8 @@ pub use std::fmt;
 
 pub const APP_PATH: &str = "typefast";
 pub const DB_NAME: &str = "typefast.db";
+pub const TEST_APP_PATH: &str = "__test__";
+pub const TEST_DB_NAME: &str = "mock.db";
 pub const GAME_DURATION: u64 = 60;
 pub const COUNTDOWN_DURATION: u64 = 3;
 pub const TEST_WORDS: [&str; 21] = [

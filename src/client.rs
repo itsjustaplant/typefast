@@ -22,8 +22,10 @@ pub enum ClientError {
     CreateRecordsTableError(RusqliteError),
     #[error("Could not get records")]
     GetRecordsError(),
-    #[error("Could not insert record")]
+    #[error("Could not insert record: {0}")]
     InsertRecordError(RusqliteError),
+    #[error("Could not drop records table: {0}")]
+    DropRecordsTableError(RusqliteError),
 }
 
 impl Client {
@@ -119,5 +121,62 @@ impl Client {
                 (wpm, cpm, date),
             )
             .map_err(ClientError::InsertRecordError)
+    }
+
+    pub fn drop_records_table(&self) -> Result<usize, ClientError> {
+        self.get_connection()?
+            .execute("DROP TABLE IF EXISTS records", [])
+            .map_err(ClientError::DropRecordsTableError)
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::constants::{TEST_APP_PATH, TEST_DB_NAME};
+    use std::path::Path;
+
+    fn get_test_db_path() -> PathBuf {
+        let db_path = Path::new(TEST_APP_PATH);
+        db_path.to_path_buf()
+    }
+
+    #[test]
+    fn test_client_operations() {
+        // OPEN CONNECTION TEST
+        let mut client = Client::default();
+        let result = client.open_connection(get_test_db_path(), TEST_DB_NAME);
+        assert!(result.is_ok());
+        assert!(client.connection.is_some());
+
+        // GET CONNECTION TEST
+        let result = client.get_connection();
+        assert!(result.is_ok());
+
+        // CREATE RECORDS TABLE TEST
+        let result = client.create_records_table();
+        assert!(result.is_ok());
+
+        // CREATE RECORD TEST
+        let result = client.create_record(35, 260, "2025-01-04 14:07:25".to_string());
+        assert!(result.is_ok());
+
+        // GET RECORDS TEST
+        let records = client.get_records();
+        assert!(records.is_ok());
+        let records = records.unwrap();
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].wpm, 35);
+        assert_eq!(records[0].cpm, 260);
+        assert_eq!(records[0].date, "2025-01-04 14:07:25");
+
+        // DROP RECORDS TABLE TEST
+        let result = client.drop_records_table();
+        println!("{:?}", result);
+        assert!(result.is_ok());
+
+        // CLOSE CONNECTION TEST
+        let result = client.close_connection();
+        assert!(result.is_ok());
+        assert!(client.connection.is_none());
     }
 }
