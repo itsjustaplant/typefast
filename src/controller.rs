@@ -471,5 +471,9 @@ mod tests {
         controller.state.set_page(Page::Game);
         let action = controller.handle_key_stroke(KeyCode::Up);
         assert_eq!(action, Action::Empty);
+
+        // BACKSPACE KEY -- OTHER PAGE TEST
+        let action = controller.handle_key_stroke(KeyCode::Backspace);
+        assert_eq!(action, Action::Empty);
     }
 }
