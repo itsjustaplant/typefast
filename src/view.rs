@@ -163,8 +163,8 @@ impl View {
                 .iter()
                 .map(|record| {
                     ListItem::new(format!(
-                        "{} - {}wpm {}cpm",
-                        record.date, record.wpm, record.cpm
+                        "{} :: {} - {}wpm {}cpm",
+                        record.id, record.date, record.wpm, record.cpm
                     ))
                 })
                 .collect::<Vec<ListItem>>()
