@@ -410,4 +410,55 @@ mod tests {
         assert_eq!(controller.state.get_is_running(), false);
         assert!(controller.client.connection.is_none());
     }
+
+    #[test]
+    fn test_handle_key_stroke() {
+        // ESC KEY -- MENU PAGE TEST
+        let mut controller = Controller::new();
+        controller.state.set_page(Page::Menu);
+        let action = controller.handle_key_stroke(KeyCode::Esc);
+        assert_eq!(action, Action::Exit);
+
+        // ESC KEY -- GAME PAGE TEST
+        controller.state.set_page(Page::Game);
+        let action = controller.handle_key_stroke(KeyCode::Esc);
+        assert_eq!(action, Action::ChangePage(Page::Menu));
+
+        // ENTER KEY -- MENU PAGE TEST
+        controller.state.set_page(Page::Menu);
+        let action = controller.handle_key_stroke(KeyCode::Enter);
+        assert_eq!(action, Action::ChangePage(Page::CountDown));
+        controller.state.set_menu_index(1);
+        let action = controller.handle_key_stroke(KeyCode::Enter);
+        assert_eq!(action, Action::ChangePage(Page::Records));
+
+        // CHAR -- GAME PAGE TEST
+        controller.state.set_page(Page::Game);
+        let action = controller.handle_key_stroke(KeyCode::Char('T'));
+        assert_eq!(action, Action::CharInput('T'));
+
+        // CHAR -- OTHER PAGE TEST
+        controller.state.set_page(Page::Menu);
+        let action = controller.handle_key_stroke(KeyCode::Char('T'));
+        assert_eq!(action, Action::Empty);
+
+        // DOWN KEY  -- MENU PAGE TEST
+        let action = controller.handle_key_stroke(KeyCode::Down);
+        assert_eq!(action, Action::MenuAction);
+
+        // DOWN KEY -- OTHER PAGE TEST
+        controller.state.set_page(Page::Game);
+        let action = controller.handle_key_stroke(KeyCode::Down);
+        assert_eq!(action, Action::Empty);
+
+        // UP KEY  -- MENU PAGE TEST
+        controller.state.set_page(Page::Menu);
+        let action = controller.handle_key_stroke(KeyCode::Up);
+        assert_eq!(action, Action::MenuAction);
+
+        // UP KEY -- OTHER PAGE TEST
+        controller.state.set_page(Page::Game);
+        let action = controller.handle_key_stroke(KeyCode::Up);
+        assert_eq!(action, Action::Empty);
+    }
 }
