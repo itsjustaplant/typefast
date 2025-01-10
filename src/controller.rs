@@ -113,8 +113,6 @@ impl Controller {
                             self.state.set_char_count(char_count);
                         }
                     }
-                } else {
-                    self.state.set_is_running(false);
                 }
             }
             Action::ChangePage(page) => {
@@ -187,8 +185,10 @@ impl Controller {
                 Page::Game => Action::CharInput(user_input),
                 _ => Action::Empty,
             },
-            KeyCode::Down => Action::MenuAction,
-            KeyCode::Up => Action::MenuAction,
+            KeyCode::Down | KeyCode::Up => match self.state.get_page() {
+                Page::Menu => Action::MenuAction,
+                _ => Action::Empty,
+            },
             _ => Action::Empty,
         }
     }
