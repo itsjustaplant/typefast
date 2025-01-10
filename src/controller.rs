@@ -1,9 +1,12 @@
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc, Mutex,
-};
 use std::thread;
 use std::time::Duration;
+use std::{
+    path::PathBuf,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, Mutex,
+    },
+};
 
 use crossterm::event::{self, KeyCode, KeyEventKind};
 use ratatui::prelude::{Backend, Terminal};
@@ -205,11 +208,13 @@ impl Controller {
         Ok(())
     }
 
-    pub fn init_controller(&mut self) -> Result<(), ControllerError> {
+    pub fn init_controller(
+        &mut self,
+        app_config_path: PathBuf,
+        db_name: &str,
+    ) -> Result<(), ControllerError> {
         self.handle_action(Action::Init)?;
-        let app_config_path = get_app_config_path()?;
-        create_config_folder(&app_config_path)?;
-        self.client.open_connection(app_config_path, DB_NAME)?;
+        self.client.open_connection(app_config_path, db_name)?;
         self.client.create_records_table()?;
         Ok(())
     }
@@ -220,9 +225,11 @@ impl Controller {
     }
 
     pub fn run<B: Backend>(&mut self, terminal: &mut Terminal<B>) -> Result<(), ControllerError> {
+        let app_config_path = get_app_config_path()?;
+        create_config_folder(&app_config_path)?;
         // this line sets the global error
         let _ = self
-            .init_controller()
+            .init_controller(app_config_path, DB_NAME)
             .map_err(|e| self.state.set_error(e.to_string()));
         while self.state.get_is_running() {
             let _ = self.handle_events().map_err(|e| {
@@ -475,5 +482,22 @@ mod tests {
         // BACKSPACE KEY -- OTHER PAGE TEST
         let action = controller.handle_key_stroke(KeyCode::Backspace);
         assert_eq!(action, Action::Empty);
+    }
+
+    #[test]
+    fn test_handle_events() {
+        let mut controller = Controller::new();
+        let result = controller.handle_events();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_init_controller() {
+        let mut controller = Controller::new();
+        let db_name = format!("controller_{TEST_DB_NAME}");
+        let result = controller.init_controller(get_test_db_path(), db_name.as_str());
+        assert!(result.is_ok());
+        let result = controller.client.drop_records_table();
+        assert!(result.is_ok());
     }
 }
