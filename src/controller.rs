@@ -432,6 +432,16 @@ mod tests {
         let action = controller.handle_key_stroke(KeyCode::Enter);
         assert_eq!(action, Action::ChangePage(Page::Records));
 
+        // ENTER KEY -- GAME RESULT PAGE TEST
+        controller.state.set_page(Page::GameResult);
+        let action = controller.handle_key_stroke(KeyCode::Enter);
+        assert_eq!(action, Action::ChangePage(Page::Menu));
+
+        // ENTER KEY -- OTHER PAGE TEST
+        controller.state.set_page(Page::Game);
+        let action = controller.handle_key_stroke(KeyCode::Enter);
+        assert_eq!(action, Action::Empty);
+
         // CHAR -- GAME PAGE TEST
         controller.state.set_page(Page::Game);
         let action = controller.handle_key_stroke(KeyCode::Char('T'));
@@ -443,6 +453,7 @@ mod tests {
         assert_eq!(action, Action::Empty);
 
         // DOWN KEY  -- MENU PAGE TEST
+        controller.state.set_page(Page::Menu);
         let action = controller.handle_key_stroke(KeyCode::Down);
         assert_eq!(action, Action::MenuAction);
 
