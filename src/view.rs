@@ -223,6 +223,8 @@ impl View {
 
 #[cfg(test)]
 mod tests {
+    use crate::record;
+
     use super::*;
     use ratatui::backend::TestBackend;
 
@@ -269,8 +271,29 @@ mod tests {
     fn test_draw_records_page() {
         let backend = TestBackend::new(80, 24);
         let mut terminal = Terminal::new(backend).unwrap();
+        let records = vec![record::Record {
+            id: 0,
+            wpm: 35,
+            cpm: 260,
+            date: "2025-01-04 14:07:25".to_string(),
+        }];
         let state = State {
             page: Page::Records,
+            records,
+            ..State::default()
+        };
+
+        let result = View::draw(&mut terminal, &state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_draw_empty_records_page() {
+        let backend = TestBackend::new(80, 24);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let state = State {
+            page: Page::Records,
+            records: vec![],
             ..State::default()
         };
 
