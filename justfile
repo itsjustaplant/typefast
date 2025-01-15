@@ -6,7 +6,7 @@ default:
 build:
   cargo build
 
-format:
+fmt:
   cargo fmt; cargo clippy;
 
 test:

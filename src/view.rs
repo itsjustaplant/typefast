@@ -187,7 +187,7 @@ impl View {
 
         let title = Line::from(" typefast ");
         let widget = Paragraph::new(format!(
-            "Congrats! You typed {} words and {} characters in 60s! Would you like to save this record?",
+            "Congrats! You typed {} words and {} characters in 60s!",
             state.get_word_count(),
             state.get_char_count(),
         ))

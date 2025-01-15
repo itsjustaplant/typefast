@@ -85,16 +85,6 @@ impl Controller {
         match action {
             Action::Init => {
                 self.state.set_is_running(true);
-                let parsed_words = get_words()
-                    .iter()
-                    .map(|word| word.to_string())
-                    .collect::<Vec<String>>();
-                let parsed_paragraph = parsed_words
-                    .iter()
-                    .map(|word| word.to_lowercase())
-                    .collect::<Vec<String>>()
-                    .join(" ");
-                self.state.set_paragraph(parsed_paragraph);
             }
             Action::Exit => {
                 self.state.set_is_running(false);
@@ -121,6 +111,17 @@ impl Controller {
             Action::ChangePage(page) => {
                 match page {
                     Page::CountDown => {
+                        let parsed_words = get_words()
+                            .iter()
+                            .map(|word| word.to_string())
+                            .collect::<Vec<String>>();
+                        let parsed_paragraph = parsed_words
+                            .iter()
+                            .map(|word| word.to_lowercase())
+                            .collect::<Vec<String>>()
+                            .join(" ");
+                        self.state.set_paragraph(parsed_paragraph);
+                        self.state.reset_stats();
                         self.setup_timer(COUNTDOWN_DURATION);
                         self.state.set_next_page(Page::Game);
                     }

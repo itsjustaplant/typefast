@@ -113,6 +113,14 @@ impl State {
     pub fn set_menu_index(&mut self, menu_index: i32) {
         self.menu_index = menu_index;
     }
+
+    pub fn reset_stats(&mut self) {
+        self.set_char_count(0);
+        self.set_char_speed(0);
+        self.set_position(0);
+        self.set_word_count(0);
+        self.set_word_speed(0);
+    }
 }
 
 #[cfg(test)]
