@@ -314,7 +314,6 @@ mod tests {
         let result = controller.handle_action(action);
         assert!(result.is_ok());
         assert_eq!(controller.state.get_is_running(), true);
-        assert!(controller.state.get_paragraph().len() > 0);
 
         controller.state.set_paragraph("T E S T".to_string());
         // HANDLE CHAR INPUT TEST
@@ -349,6 +348,7 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(controller.state.get_page(), &Page::CountDown);
         assert_eq!(controller.state.get_next_page(), &Page::Game);
+        assert!(controller.state.get_paragraph().len() > 0);
 
         // PAGE::GAME
         let action = Action::ChangePage(Page::Game);
