@@ -10,8 +10,9 @@ use ratatui::{
 };
 use thiserror::Error;
 
-use crate::constants::{Page, MENU_ITEMS};
+use crate::constants::{Page, COUNTDOWN_DURATION, GAME_DURATION, MENU_ITEMS};
 use crate::state::State;
+use crate::util::{calculate_char_speed, calculate_word_speed};
 
 #[derive(Debug, Default)]
 pub struct View {}
@@ -29,7 +30,7 @@ impl View {
                 let area = frame.size();
 
                 match state.page {
-                    Page::Game => View::draw_main_page(frame, area, state),
+                    Page::Game => View::draw_game_page(frame, area, state),
                     Page::Menu => View::draw_menu_page(frame, area, state),
                     Page::CountDown => View::draw_countdown_page(frame, area, state),
                     Page::Records => View::draw_records_page(frame, area, state),
@@ -55,7 +56,7 @@ impl View {
         (outer_layout, inner_layout)
     }
 
-    fn draw_main_page(frame: &mut Frame, area: Rect, state: &State) {
+    fn draw_game_page(frame: &mut Frame, area: Rect, state: &State) {
         let chunks = View::get_chunks(area);
         let outer_layout = chunks.0;
         let inner_layout = chunks.1;
@@ -63,9 +64,10 @@ impl View {
         let message = state.get_paragraph();
         let message_length = message.len();
         let position = state.get_position() as usize;
-        let timer = state.get_timer();
-        let word_speed = state.get_word_speed();
-        let char_speed = state.get_char_speed();
+        let elapsed_time = state.get_elapsed_time();
+        let timer = GAME_DURATION - elapsed_time;
+        let word_speed = calculate_word_speed(state.word_count, elapsed_time);
+        let char_speed = calculate_char_speed(state.char_count, elapsed_time);
 
         let lines = Line::from(vec![
             Span::styled(&message[0..position], Style::default().fg(Color::Green)),
@@ -135,14 +137,17 @@ impl View {
         let inner_layout = chunks.1;
 
         let title = Line::from(" typefast ");
-        let widget = Paragraph::new(format!("Get ready! {}s", state.get_timer()))
-            .alignment(Alignment::Center)
-            .block(
-                Block::bordered()
-                    .title(title)
-                    .padding(Padding::new(3, 3, 1, 1)),
-            )
-            .wrap(Wrap { trim: true });
+        let widget = Paragraph::new(format!(
+            "Get ready! {}s",
+            COUNTDOWN_DURATION - state.get_elapsed_time()
+        ))
+        .alignment(Alignment::Center)
+        .block(
+            Block::bordered()
+                .title(title)
+                .padding(Padding::new(3, 3, 1, 1)),
+        )
+        .wrap(Wrap { trim: true });
 
         frame.render_widget(widget, outer_layout[0]);
 

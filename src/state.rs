@@ -1,3 +1,5 @@
+use chrono::Local;
+
 use crate::constants::Page;
 use crate::record::Record;
 
@@ -5,17 +7,15 @@ use crate::record::Record;
 pub struct State {
     pub is_running: bool,
     pub page: Page,
-    pub next_page: Page,
     pub error: String,
     pub position: i32,
     pub paragraph: String,
-    pub timer: u64,
+    pub timer: i64,
     pub char_count: u64,
     pub word_count: u64,
-    pub char_speed: i64,
-    pub word_speed: i64,
     pub records: Vec<Record>,
     pub menu_index: i32,
+    pub reference_timestamp: i64,
 }
 
 impl State {
@@ -44,13 +44,6 @@ impl State {
         self.page = page;
     }
 
-    pub fn get_next_page(&self) -> &Page {
-        &self.next_page
-    }
-    pub fn set_next_page(&mut self, next_page: Page) {
-        self.next_page = next_page;
-    }
-
     pub fn get_position(&self) -> i32 {
         self.position
     }
@@ -65,10 +58,10 @@ impl State {
         self.paragraph = new_paragraph;
     }
 
-    pub fn get_timer(&self) -> u64 {
+    pub fn get_timer(&self) -> i64 {
         self.timer
     }
-    pub fn set_timer(&mut self, new_timer: u64) {
+    pub fn set_timer(&mut self, new_timer: i64) {
         self.timer = new_timer;
     }
 
@@ -84,20 +77,6 @@ impl State {
     }
     pub fn set_char_count(&mut self, char_count: u64) {
         self.char_count = char_count;
-    }
-
-    pub fn get_char_speed(&self) -> i64 {
-        self.char_speed
-    }
-    pub fn set_char_speed(&mut self, char_speed: i64) {
-        self.char_speed = char_speed;
-    }
-
-    pub fn get_word_speed(&self) -> i64 {
-        self.word_speed
-    }
-    pub fn set_word_speed(&mut self, word_speed: i64) {
-        self.word_speed = word_speed;
     }
 
     pub fn get_records(&self) -> &Vec<Record> {
@@ -116,10 +95,23 @@ impl State {
 
     pub fn reset_stats(&mut self) {
         self.set_char_count(0);
-        self.set_char_speed(0);
         self.set_position(0);
         self.set_word_count(0);
-        self.set_word_speed(0);
+    }
+
+    pub fn get_reference_timestamp(&self) -> i64 {
+        self.reference_timestamp
+    }
+    pub fn set_reference_timestamp(&mut self, timestamp: Option<i64>) {
+        self.reference_timestamp = timestamp.unwrap_or(Local::now().timestamp());
+    }
+
+    pub fn get_elapsed_time(&self) -> i64 {
+        if self.reference_timestamp == 0 {
+            0
+        } else {
+            Local::now().timestamp() - self.get_reference_timestamp()
+        }
     }
 }
 
@@ -132,17 +124,15 @@ mod tests {
         let state = State::new();
         assert_eq!(state.is_running, false);
         assert_eq!(state.page, Page::default());
-        assert_eq!(state.next_page, Page::default());
         assert_eq!(state.error, "");
         assert_eq!(state.position, 0);
         assert_eq!(state.paragraph, "");
         assert_eq!(state.timer, 0);
         assert_eq!(state.char_count, 0);
         assert_eq!(state.word_count, 0);
-        assert_eq!(state.char_speed, 0);
-        assert_eq!(state.word_speed, 0);
         assert!(state.records.is_empty());
         assert_eq!(state.menu_index, 0);
+        assert_eq!(state.reference_timestamp, 0);
     }
 
     #[test]
@@ -166,14 +156,6 @@ mod tests {
         let page = Page::default();
         state.set_page(page.clone());
         assert_eq!(state.get_page(), &page);
-    }
-
-    #[test]
-    fn test_set_get_next_page() {
-        let mut state = State::new();
-        let next_page = Page::default();
-        state.set_next_page(next_page.clone());
-        assert_eq!(state.get_next_page(), &next_page);
     }
 
     #[test]
@@ -213,31 +195,17 @@ mod tests {
     }
 
     #[test]
-    fn test_set_get_char_speed() {
+    fn test_set_get_reference_timestamp() {
         let mut state = State::new();
-        state.set_char_speed(30);
-        assert_eq!(state.get_char_speed(), 30);
+        let timestamp = 1627846261;
+        state.set_reference_timestamp(Some(timestamp));
+        assert_eq!(state.get_reference_timestamp(), timestamp);
     }
 
     #[test]
-    fn test_set_get_word_speed() {
+    fn test_set_reference_timestamp_none() {
         let mut state = State::new();
-        state.set_word_speed(15);
-        assert_eq!(state.get_word_speed(), 15);
-    }
-
-    #[test]
-    fn test_set_get_records() {
-        let mut state = State::new();
-        let records = vec![Record::default()];
-        state.set_records(records.clone());
-        assert_eq!(state.get_records(), &records);
-    }
-
-    #[test]
-    fn test_set_get_menu_index() {
-        let mut state = State::new();
-        state.set_menu_index(2);
-        assert_eq!(state.get_menu_index(), 2);
+        state.set_reference_timestamp(None);
+        assert!(state.get_reference_timestamp() > 0);
     }
 }

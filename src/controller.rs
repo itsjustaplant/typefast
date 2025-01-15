@@ -1,13 +1,6 @@
-use std::thread;
-use std::time::Duration;
-use std::{
-    path::PathBuf,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc, Mutex,
-    },
-};
+use std::path::PathBuf;
 
+use chrono::Local;
 use crossterm::event::{self, KeyCode, KeyEventKind};
 use ratatui::prelude::{Backend, Terminal};
 use thiserror::Error;
@@ -24,8 +17,6 @@ type DynamicError = Box<dyn std::error::Error>;
 #[derive(Default)]
 pub struct Controller {
     pub state: State,
-    timer_running: Arc<AtomicBool>,
-    remaining_time: Arc<Mutex<u64>>,
     client: Client,
 }
 
@@ -45,40 +36,8 @@ impl Controller {
     pub fn new() -> Self {
         Self {
             state: State::new(),
-            timer_running: Arc::new(AtomicBool::new(false)),
-            remaining_time: Arc::new(Mutex::new(0)),
             client: Client::default(),
         }
-    }
-
-    pub fn setup_timer(&mut self, duration: u64) {
-        if self.timer_running.load(Ordering::SeqCst) {
-            return;
-        }
-
-        self.timer_running.store(true, Ordering::SeqCst);
-        let timer_running = Arc::clone(&self.timer_running);
-        let remaining_time = Arc::clone(&self.remaining_time);
-
-        *remaining_time.lock().unwrap() = duration;
-
-        thread::spawn(move || {
-            for _ in 0..duration {
-                if !timer_running.load(Ordering::SeqCst) {
-                    timer_running.store(false, Ordering::SeqCst);
-                    break;
-                }
-                thread::sleep(Duration::from_secs(1));
-                let mut time = remaining_time.lock().unwrap();
-                if *time > 0 {
-                    *time -= 1;
-                }
-            }
-        });
-    }
-
-    pub fn stop_timer(&mut self) {
-        self.timer_running.store(false, Ordering::SeqCst);
     }
 
     pub fn handle_action(&mut self, action: Action) -> Result<(), ControllerError> {
@@ -122,22 +81,16 @@ impl Controller {
                             .join(" ");
                         self.state.set_paragraph(parsed_paragraph);
                         self.state.reset_stats();
-                        self.setup_timer(COUNTDOWN_DURATION);
-                        self.state.set_next_page(Page::Game);
+                        self.state.set_reference_timestamp(None);
                     }
                     Page::Game => {
-                        self.setup_timer(GAME_DURATION);
-                        self.state.set_next_page(Page::GameResult);
+                        self.state.set_reference_timestamp(None);
                     }
-                    Page::Menu => {
-                        self.state.set_next_page(Page::CountDown);
-                    }
+                    Page::Menu => {}
                     Page::Records => {
                         self.handle_action(Action::GetRecords)?;
-                        self.stop_timer();
                     }
                     Page::GameResult => {
-                        self.stop_timer();
                         self.handle_action(Action::PostRecord)?;
                         self.handle_action(Action::ChangePage(Page::Menu))?;
                     }
@@ -150,8 +103,8 @@ impl Controller {
             }
 
             Action::PostRecord => {
-                let wpm = self.state.get_word_speed();
-                let cpm = self.state.get_char_speed();
+                let wpm = calculate_word_speed(self.state.get_word_count(), GAME_DURATION);
+                let cpm = calculate_char_speed(self.state.get_char_count(), GAME_DURATION);
                 let date = get_current_datetime();
                 self.client.create_record(wpm, cpm, date)?;
             }
@@ -167,13 +120,10 @@ impl Controller {
 
     pub fn handle_key_stroke(&mut self, key_code: KeyCode) -> Action {
         match key_code {
-            KeyCode::Esc => {
-                self.stop_timer();
-                match self.state.get_page() {
-                    Page::Menu => Action::Exit,
-                    _ => Action::ChangePage(Page::Menu),
-                }
-            }
+            KeyCode::Esc => match self.state.get_page() {
+                Page::Menu => Action::Exit,
+                _ => Action::ChangePage(Page::Menu),
+            },
             KeyCode::Enter => match self.state.get_page() {
                 Page::Menu => {
                     if self.state.get_menu_index() == 0 {
@@ -244,41 +194,27 @@ impl Controller {
                 })
                 .ok();
 
-            if self.timer_running.load(Ordering::SeqCst) {
-                let time = self.remaining_time.lock().unwrap();
-                let time_value = *time;
-                let current_time_value = self.state.get_timer();
+            self.state.set_timer(Local::now().timestamp());
 
-                if time_value != current_time_value {
-                    let word_speed = calculate_word_speed(
-                        self.state.word_count,
-                        GAME_DURATION - current_time_value,
-                    );
-                    let char_speed = calculate_char_speed(
-                        self.state.char_count,
-                        GAME_DURATION - current_time_value,
-                    );
-                    self.state.set_word_speed(word_speed);
-                    self.state.set_char_speed(char_speed);
-                    self.state.set_timer(time_value);
-                }
-
-                if time_value == 0 {
-                    let action = match self.state.get_next_page() {
-                        Page::Game => Action::ChangePage(Page::Game),
-                        Page::Menu => Action::ChangePage(Page::Menu),
-                        Page::CountDown => Action::ChangePage(Page::CountDown),
-                        Page::Records => Action::Empty,
-                        Page::GameResult => Action::ChangePage(Page::GameResult),
-                    };
-                    drop(time);
-                    self.stop_timer();
-                    self.handle_action(action)
-                        .map_err(|e| self.state.set_error(e.to_string()))
-                        .ok();
+            if self.state.get_reference_timestamp() != 0 {
+                match self.state.get_page() {
+                    Page::CountDown => {
+                        if self.state.get_elapsed_time() >= COUNTDOWN_DURATION {
+                            self.handle_action(Action::ChangePage(Page::Game))
+                                .map_err(|e| self.state.set_error(e.to_string()))
+                                .ok();
+                        }
+                    }
+                    Page::Game => {
+                        if self.state.get_elapsed_time() >= GAME_DURATION {
+                            self.handle_action(Action::ChangePage(Page::GameResult))
+                                .map_err(|e| self.state.set_error(e.to_string()))
+                                .ok();
+                        }
+                    }
+                    _ => {}
                 }
             }
-            thread::sleep(Duration::from_millis(5));
         }
         Ok(())
     }
@@ -347,7 +283,6 @@ mod tests {
         let result = controller.handle_action(action);
         assert!(result.is_ok());
         assert_eq!(controller.state.get_page(), &Page::CountDown);
-        assert_eq!(controller.state.get_next_page(), &Page::Game);
         assert!(controller.state.get_paragraph().len() > 0);
 
         // PAGE::GAME
@@ -355,14 +290,12 @@ mod tests {
         let result = controller.handle_action(action);
         assert!(result.is_ok());
         assert_eq!(controller.state.get_page(), &Page::Game);
-        assert_eq!(controller.state.get_next_page(), &Page::GameResult);
 
         // PAGE::MENU
         let action = Action::ChangePage(Page::Menu);
         let result = controller.handle_action(action);
         assert!(result.is_ok());
         assert_eq!(controller.state.get_page(), &Page::Menu);
-        assert_eq!(controller.state.get_next_page(), &Page::CountDown);
 
         // PAGE::RECORDS
         let action = Action::ChangePage(Page::Records);
@@ -383,8 +316,6 @@ mod tests {
         assert!(result.is_ok());
         assert_eq!(controller.state.get_records().len(), 1);
 
-        controller.state.set_word_speed(35);
-        controller.state.set_char_speed(260);
         // POST RECORD TEST
         let action = Action::PostRecord;
         let result = controller.handle_action(action);
