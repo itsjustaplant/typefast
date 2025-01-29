@@ -300,7 +300,6 @@ mod tests {
         // PAGE::RECORDS
         let action = Action::ChangePage(Page::Records);
         let result = controller.handle_action(action);
-        println!("{:?}", result);
         assert!(result.is_ok());
         assert_eq!(controller.state.get_page(), &Page::Records);
 

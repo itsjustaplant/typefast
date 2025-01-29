@@ -173,7 +173,6 @@ mod tests {
 
         // DROP RECORDS TABLE TEST
         let result = client.drop_records_table();
-        println!("{:?}", result);
         assert!(result.is_ok());
 
         // CLOSE CONNECTION TEST
