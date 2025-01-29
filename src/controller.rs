@@ -194,7 +194,7 @@ impl Controller {
                 })
                 .ok();
 
-            self.state.set_timer(Local::now().timestamp());
+            self.state.set_timer(Local::now().timestamp_millis());
 
             if self.state.get_reference_timestamp() != 0 {
                 match self.state.get_page() {

@@ -103,14 +103,14 @@ impl State {
         self.reference_timestamp
     }
     pub fn set_reference_timestamp(&mut self, timestamp: Option<i64>) {
-        self.reference_timestamp = timestamp.unwrap_or(Local::now().timestamp());
+        self.reference_timestamp = timestamp.unwrap_or(Local::now().timestamp_millis());
     }
 
     pub fn get_elapsed_time(&self) -> i64 {
         if self.reference_timestamp == 0 {
             0
         } else {
-            Local::now().timestamp() - self.get_reference_timestamp()
+            (Local::now().timestamp_millis() - self.get_reference_timestamp()) / 1000
         }
     }
 }
